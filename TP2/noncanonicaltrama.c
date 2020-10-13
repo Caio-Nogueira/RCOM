@@ -14,7 +14,7 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG 0x73
+#define FLAG 0x7E
 #define A_SEND 0x03
 #define C_SET 0x03
 #define BCC1 (A_SEND ^ C_SET)
@@ -95,8 +95,8 @@ int main(int argc, char** argv)
     char buf[255];
 
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -151,7 +151,8 @@ int main(int argc, char** argv)
     char str[255];
     
 
-      res = read(fd,str,6);   /* returns after 6 chars have been input */
+    res = read(fd,str,6);   /* returns after 6 chars have been input */
+    printf("%s", str);
     //receber e verificar o SET
     while (STOP==FALSE) {       /* loop for input */
       if(n == 0){
@@ -164,37 +165,37 @@ int main(int argc, char** argv)
           if(str[n] != (char) (A_SEND)){
             SUCESS = FALSE;
           }
-          //printf("1\n");
+          printf("1\n");
         }
         else if(n == 2){
           if(str[n] != ((char) (C_SET))){
             SUCESS = FALSE;
           }
-          //printf("2\n");
+          printf("2\n");
         }
         else if(n == 3){
           if(str[n] != (char) (BCC1)){
             SUCESS = FALSE;
           } 
-          //printf("3\n");
+          printf("3\n");
         }
         else if(n == 4){
           if(str[n] != (char) (FLAG)){
             SUCESS = FALSE;
           }
-          //printf("4\n");
+          printf("4\n");
         }
         else if(n == 5){
             STOP = TRUE;
-            //printf("5\n");
+            printf("5\n");
         }
       }
       else if(n == 5){
         n = -1;
-        //printf("Failure.");
+        printf("Failure.");
         exit(0);
       }
-      //printf("%c\n", str[n]);
+      printf("%c\n", str[n]);
       n++;
     }
 

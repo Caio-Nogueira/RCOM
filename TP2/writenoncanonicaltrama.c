@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS11"
@@ -15,7 +16,7 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG 0x73
+#define FLAG 0x7E
 #define A_SEND 0x03
 #define C_SET 0x03
 #define BCC1 (A_SEND ^ C_SET)
@@ -23,19 +24,30 @@
 #define A_Recieve 0x01
 #define C_UA 0x07
 
+int flagAlarm = FALSE;
+int UA_received = FALSE;
 volatile int STOP=FALSE;
 volatile int SUCESS=TRUE;
 
+int tries = 0;
+
+void alarmHandler(){
+  flagAlarm = TRUE;
+  tries++;
+}
+
+
 int main(int argc, char** argv)
 {
-    int fd,c, res;
+    int fd, c, res;
     struct termios oldtio,newtio;
     char buf[255];
     int i, sum = 0, speed = 0;
+    signal(SIGALRM, alarmHandler);
     
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -63,8 +75,8 @@ int main(int argc, char** argv)
     /* set input mode (non-canonical, no echo,...) */
     newtio.c_lflag = 0;
 
-    newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+    newtio.c_cc[VTIME]    = 3;   /* inter-character timer unused */
+    newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
 
 
 
@@ -94,10 +106,10 @@ int main(int argc, char** argv)
     sprintf((str + 4) , "%c", (char) FLAG);
     str[strlen(str)] = 0;
 
-    printf("Sending SET.\n");
+    /*printf("Sending SET.\n");
     res = write(fd,str,6);
     printf("SET sent.\n");
- 
+    strcpy(trama, str);*/
 
     
     int n = 0;
@@ -106,8 +118,28 @@ int main(int argc, char** argv)
     
     int a = 0;
 
-    printf("Reading SET response.\n");
-      res = read(fd,stri,6);   /* returns after 5 chars have been input */
+    do{
+      printf("Sending SET.\n");
+      res = write(fd,str,6);
+      printf("SET sent.\n");
+      alarm(3); //set 3 seconds alarm
+      flagAlarm = FALSE;
+      printf("Reading SET response.\n");
+
+      while (!flagAlarm && !UA_received ){
+        res = read(fd,stri,6);   /* returns after 5 chars have been input */
+        if (res) UA_received = TRUE;
+        //printf("%d\n", UA_received);
+        
+      }
+    } while (tries < 3 && UA_received == FALSE);
+    
+    if (!UA_received){
+      printf("Response not received - TIMEOUT.\n");
+      return 1;
+    }
+
+    //res = read(fd,stri,6);   /* returns after 5 chars have been input */
 
     printf("SET response read.\n");
  while (STOP==FALSE) {       /* loop for input */
@@ -160,7 +192,10 @@ int main(int argc, char** argv)
     printf("Atemp.\n");
     char UA[255] = "";
     printf("Awaiting UA.\n");
-    res = read(fd,UA,6);   
+    res = read(fd,UA,6); 
+
+
+
     printf("Checking UA.\n");
     while (STOP==FALSE) {       /* loop for input */  
       if(n == 0){
@@ -182,7 +217,7 @@ int main(int argc, char** argv)
         else if(n == 3){
           if(UA[n] != (char) (BCC1)){
             SUCESS = FALSE;
-          } 
+          }
         }
         else if(n == 4){
           if(UA[n] != (char) (FLAG)){
