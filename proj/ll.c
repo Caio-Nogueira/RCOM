@@ -67,7 +67,7 @@ int verifyUA(char *UAresponse){//char str[]){
 void alarmHandler(){
   printf("alarm was called.\n");
   tries++;
-  flag_rewrite_SET = 0;
+  flag_rewrite_SET = 1;
   printf("%d\n", tries);
 }
 
@@ -190,6 +190,8 @@ void llopen(int fd, flag flag){
             memset(&action,0,sizeof action);
             action.sa_handler = alarmHandler;
             action.sa_flags = 0;
+            sigaction(SIGALRM, &action, NULL);
+
             newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
 
@@ -217,7 +219,10 @@ void llopen(int fd, flag flag){
             char ua[6] = "";
 
             while(tries < NUM_TRIES){
+              printf("Start of loop.\n");
+              printf("%d.\n", flag_rewrite_SET);
               if(flag_rewrite_SET){
+              printf("Before write.\n");
                 flag_rewrite_SET = 0;
 
 
