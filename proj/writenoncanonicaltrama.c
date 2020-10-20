@@ -22,8 +22,8 @@ int main(int argc, char** argv)
     int c, fd;
 
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -36,13 +36,15 @@ int main(int argc, char** argv)
 
 
     fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(argv[1]); exit(-1); }
+    if (fd <0) {
+      perror(argv[1]); exit(-1); 
+    }
 
-    //llopen(fd, TRANSMITTER);
-    char message[121] = "123\0a456";
-    size_t size = 8;
+    llopen(fd, TRANSMITTER);
+    char message[8] = "123a456";
+    int size = 8;
     
-    buildwritearray(0, message, &size);
+    llwrite(fd, message, size);
     /*
     
     int n = 0;
