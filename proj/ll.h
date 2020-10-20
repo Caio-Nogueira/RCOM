@@ -47,5 +47,5 @@ void llopen(int fd, flag flag);
 
 int SETstateMachine(char* setmsg);
 
-char * buildwritearray(int odd);
+char * buildwritearray(int odd, char * message, size_t * size);
 

@@ -8,6 +8,9 @@ int flag_rewrite_SET = 1; //In the first input loop, dictates wether SET should 
 int tries = 0;
 int res;
 
+
+char result[127] = ""; //Contains the trama that will be sent next/is being sent
+
 int verifyUA(char *UAresponse){//char str[]){
     printf("Attempt\n");
   //char strUA[255];
@@ -320,28 +323,48 @@ void llopen(int fd, flag flag){
 /*Writer function
 Adds trama to array to be used in writter
 */
-char * buildwritearray(int odd){//Aditional arguments will need to be char * original_message, int size_of_original_message
-    char message[121] = "123"; //This shouldn't be the ,maximum size of the final message
-  size_t size = 3;
-  char result[127];
+char * buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
+  //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
+  //size_t size = 8;
+  int real_size = *size;
   sprintf(result, "%c", (char) FLAG);
   sprintf(result + 1, "%c", (char) A_SEND);
   char current_C = (char) (C_SET | ((odd) * EVENIC));
   sprintf(result + 2, "%c", current_C);
   sprintf(result + 3, "%c", (char) (A_SEND | current_C));
-  sprintf(result + 4, "%s", message); //Check if this works with '\0' later
+  //sprintf(result + 4, "%s", message); //Check if this works with '\0' later
   //sprintf(result + 4 + size, "%c", );
 
   int bcc2 = 0;
-  for(int i = 0; i < size; i++){
+  for(int i = 0; i < (*size); i++){
+    /*if(message[i] == '\0'){
+      write(STDOUT_FILENO, "A", 1);
+    }
+    else{
+    write(STDOUT_FILENO, message + i, 1);
+    }*/
+    sprintf(result + 4 + i, message + i, 1);
     //result[3 + size] = message[i];
     bcc2 = bcc2 ^ message[i];
   }
+  //printf("\n");
+  /*
+  for(int i = 0; i < size; i++){
+    if(result[i + 4] == '\0'){
+      write(STDOUT_FILENO, "A", 1);
+    }
+    else{
+    write(STDOUT_FILENO, result + i + 4, 1);
+    }
+  }*/
 
-  sprintf(result + 4 + size, "%c", (char) bcc2);
-  sprintf(result + 5 + size, "%c", (char) FLAG);
-
-  printf("%s", result);
+  //printf("\n");
+  sprintf(result + 4 + (*size), "%c", (char) bcc2);
+  sprintf(result + 5 + (*size), "%c", (char) FLAG);
+  printf("\n");
+  write(STDOUT_FILENO, result, (*size) + 6);
+  printf("\n");
+  return result;
 }
 
 /*Writer function
