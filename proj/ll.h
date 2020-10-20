@@ -30,6 +30,13 @@
 #define TRUE 1
 
 
+//------Information trama-------
+//flag = FLAG
+// A = A_SEND
+#define BASEIC 0x00
+#define EVENIC 0x40
+//BCC1 is A ^ C
+//BCC2 is an XOR between every data byte
 
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
@@ -40,5 +47,5 @@ void llopen(int fd, flag flag);
 
 int SETstateMachine(char* setmsg);
 
-
+char * buildwritearray(int odd);
 

@@ -317,3 +317,44 @@ void llopen(int fd, flag flag){
     }
 }
 
+/*Writer function
+Adds trama to array to be used in writter
+*/
+char * buildwritearray(int odd){//Aditional arguments will need to be char * original_message, int size_of_original_message
+    char message[121] = "123"; //This shouldn't be the ,maximum size of the final message
+  size_t size = 3;
+  char result[127];
+  sprintf(result, "%c", (char) FLAG);
+  sprintf(result + 1, "%c", (char) A_SEND);
+  char current_C = (char) (C_SET | ((odd) * EVENIC));
+  sprintf(result + 2, "%c", current_C);
+  sprintf(result + 3, "%c", (char) (A_SEND | current_C));
+  sprintf(result + 4, "%s", message); //Check if this works with '\0' later
+  //sprintf(result + 4 + size, "%c", );
+
+  int bcc2 = 0;
+  for(int i = 0; i < size; i++){
+    //result[3 + size] = message[i];
+    bcc2 = bcc2 ^ message[i];
+  }
+
+  sprintf(result + 4 + size, "%c", (char) bcc2);
+  sprintf(result + 5 + size, "%c", (char) FLAG);
+
+  printf("%s", result);
+}
+
+/*Writer function
+Ver pags 14 e 15 do guião
+*/
+void llwrite(int fd, char * buffer, int length){
+
+}
+
+/*Reader function
+Reads the buffer, (eventually removes stuffing), interprets the content and sends back trama de supervisão
+Ver pags 14 e 15 do guião
+*/
+void llread(int fd, char * buffer){
+
+}
