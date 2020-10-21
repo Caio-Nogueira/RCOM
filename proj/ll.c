@@ -326,7 +326,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
   //size_t size = 8;
   int real_size = (int) *size;
-  printf("%d\n", real_size);
+  printf("real_size: %d\n", real_size);
   sprintf(result, "%c", (char) FLAG);
   sprintf(result + 1, "%c", (char) A_SEND);
   char current_C = (char) (C_SET | ((odd) * EVENIC));
@@ -337,7 +337,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
 
   int bcc2 = 0;
   int j = 0;
-  for(int i = 0; i < (*size); i++){
+  for(int i = 0; i < real_size; i++){
     /*if(message[i] == '\0'){
       write(STDOUT_FILENO, "A", 1);
     }
@@ -345,26 +345,31 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
     write(STDOUT_FILENO, message + i, 1);
     }*/
     //write(STDOUT_FILENO, message + i, 1);
-    if(message[i] == (char) FLAG){
-      bcc2 = bcc2 ^ result[ 4 + i + j];
+    if(message[i] == (char) FLAG){      
       sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
-      j++;
       bcc2 = bcc2 ^ result[ 4 + i + j];
+      j++;      
       sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
+      bcc2 = bcc2 ^ result[ 4 + i + j];
     }else if(message[i] == (char) REPLACETRAMA2){
-      bcc2 = bcc2 ^ result[ 4 + i + j];
       sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
-      bcc2 = bcc2 ^ result[ 4 + i + j];
+      bcc2 = bcc2 ^ result[ 4 + i + j];      
       j++;
       sprintf(result + 4 + i + j, "%c", (char) STUF7D2);
-    }
-    else{
       bcc2 = bcc2 ^ result[ 4 + i + j];
-      sprintf(result + 4 + i + j, message + i, 1);
     }
+    else{      
+      sprintf(result + 4 + i + j, message + i, 1);
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      
+    }
+
+    printf("i: %d", i+j);
+    printf(" ; char: %c\n", result[ 4 + i + j]);
     //result[3 + size] = message[i];
     //bcc2 = bcc2 ^ message[i];
   }
+  //printf("%s\n", result);
   //printf("\n");
   /*
   for(int i = 0; i < size; i++){
@@ -378,25 +383,27 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
 
   //printf("\n");
   if(bcc2 == (char) FLAG){
-    sprintf(result + 4 + (*size) + j, "%c", (char) STUFFLAG1);
+    sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG1);
     j++;
-    sprintf(result + 4 + (*size) + j, "%c", (char) STUFFLAG2);
+    sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG2);
   }else if(bcc2 == (char) REPLACETRAMA2){
-    sprintf(result + 4 + (*size) + j, "%c", (char) STUF7D1);
+    sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D1);
     j++;
-    sprintf(result + 4 + (*size) + j, "%c", (char) STUF7D2);
+    sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D2);
   }
-  else{
-    sprintf(result + 4 + (*size) + j, "%c", (char) bcc2);
+  else{    
+    sprintf(result + 4 + (real_size) + j, "%c", (char) bcc2); 
   }
-
-  sprintf(result + 5 + (*size) + j, "%c", (char) FLAG);
+  //printf("bcc: %c", *(result + 4 + (real_size) + j));
+  sprintf(result + 5 + (real_size) + j, "%c", (char) FLAG);
   (*size) += 6 + j;
+  real_size = *size;
   //Print final message
   /*for(int i = 0; i < (*size) + j; i++){
     write(STDOUT_FILENO, result + i, 1);
   }*/
-  memcpy(message, result, (*size));
+  printf("result: %s\n", result);
+  memcpy(message, result, 255);
   return; //result;
 }
 
@@ -466,10 +473,12 @@ int readInformationFrame(int fd, char* buffer){
   //read I frame
   int len = 0;
   char byte;
+  InformationFrameState state = START;
   while (read(fd, &byte, 1) > 0){
-    if (byte == '\0') break;
+    //call destuffing function
+    DataFrameStateMachine(&state, byte);
+    if (state == END) break;
     buffer[len++] = byte;
-    //printf("aaa\n");
   }
   return len;
 }
@@ -480,10 +489,12 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   {
   
   case START:
+    printf("START\n");
     if (byte == FLAG) *state = FLAG_RCVD;
     break;
   
   case FLAG_RCVD:
+    printf("FLAG_RCVD\n");
     if (byte == A_SEND) *state = A_RCVD;
     else if (byte == FLAG){
       *state = FLAG_RCVD;
@@ -491,6 +502,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
   
   case A_RCVD:
+    printf("A_RCVD\n");
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
@@ -500,6 +512,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case C_RCVD:
+    printf("C_RCVD\n");
     if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
       *state = BCC1_RCVD;
     }
@@ -509,16 +522,20 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case BCC1_RCVD:
+    printf("BCC1_RCVD\n");
     if (byte != FLAG) *state = DATA_RCVD;
     else if (byte == FLAG){
       *state = FLAG_RCVD;
     }
     break;
   case DATA_RCVD:
+    printf("DATA_RCVD\n");
     if (byte == FLAG) *state = END; //sucess
     break;
 
-  case END: break;
+  case END: 
+    printf("END\n");
+    break;
 
   default:
     break;
@@ -531,12 +548,12 @@ Ver pags 14 e 15 do guião
 */
 int llwrite(int fd, char * buffer, int length){
   int odd = 0;
-  char* frame = buildwritearray(odd, buffer, (size_t *) &length);
+  buildwritearray(odd, buffer, (size_t *) &length);
   //frame[length] = '\0';
   odd = (odd+1) % 2;
   //write(STDOUT_FILENO, result, length+6);
-  write(fd, frame, length + 6);
-  printf("%d\n", length);
+  write(fd, buffer, length);
+  printf("buffer: %s\n", buffer);
   return length;
   //TODO: implement alarm to protect I frames
 
@@ -551,6 +568,6 @@ Ver pags 14 e 15 do guião
 void llread(int fd, char * buffer){
   int frame_length = readInformationFrame(fd, buffer);
   printf("%s\n", buffer);
-  //TODO: implement stuffing/destuffing
+  
 
 }

@@ -41,8 +41,8 @@ int main(int argc, char** argv)
     }
 
     llopen(fd, TRANSMITTER);
-    char message[8] = "123a456";
-    int size = 8;
+    char message[131084] = "123a456";
+    int size = 7;
     
     llwrite(fd, message, size);
     /*
