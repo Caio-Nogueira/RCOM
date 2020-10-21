@@ -39,10 +39,26 @@ int main(int argc, char** argv)
     if (fd <0) {perror(argv[1]); exit(-1); }
 
     //llopen(fd, TRANSMITTER);
-    char message[121] = "123\0a456";
+    char message[255] = "12345678"; //120 character size for 255
+    message[3] = FLAG;
+    message[5] = REPLACETRAMA2;
     size_t size = 8;
     
     buildwritearray(0, message, &size);
+    for(int i = 0; i < (size); i++){
+      write(STDOUT_FILENO, message + i, 1);
+      printf("\n");
+    }
+      printf("\n");
+      printf("\n");
+      printf("\n");
+      printf("\n");
+    destuffing(0, message, (int *) (&size));
+
+    for(int i = 0; i < (size); i++){
+      write(STDOUT_FILENO, message + i, 1);
+      printf("\n");
+    }
     /*
     
     int n = 0;

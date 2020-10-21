@@ -38,6 +38,14 @@
 //BCC1 is A ^ C
 //BCC2 is an XOR between every data byte
 
+#define STUFFLAG1 0x7D
+#define STUFFLAG2 0x5E
+
+#define REPLACETRAMA2 0x7D
+#define STUF7D1 0x7D
+#define STUF7D2 0x5D
+
+
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 
@@ -47,5 +55,7 @@ void llopen(int fd, flag flag);
 
 int SETstateMachine(char* setmsg);
 
-char * buildwritearray(int odd, char * message, size_t * size);
+void buildwritearray(int odd, char * message, size_t * size);
+
+int destuffing(int odd, char * message, int * size);
 

@@ -9,7 +9,7 @@ int tries = 0;
 int res;
 
 
-char result[127] = ""; //Contains the trama that will be sent next/is being sent
+char result[255] = ""; //Contains the trama that will be sent next/is being sent
 
 int verifyUA(char *UAresponse){//char str[]){
     printf("Attempt\n");
@@ -323,19 +323,20 @@ void llopen(int fd, flag flag){
 /*Writer function
 Adds trama to array to be used in writter
 */
-char * buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
+void buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
   //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
   //size_t size = 8;
   int real_size = *size;
   sprintf(result, "%c", (char) FLAG);
   sprintf(result + 1, "%c", (char) A_SEND);
   char current_C = (char) (C_SET | ((odd) * EVENIC));
-  sprintf(result + 2, "%c", current_C);
+  sprintf(result + 2, "%c", current_C ^ A_SEND);
   sprintf(result + 3, "%c", (char) (A_SEND | current_C));
   //sprintf(result + 4, "%s", message); //Check if this works with '\0' later
   //sprintf(result + 4 + size, "%c", );
 
   int bcc2 = 0;
+  int j = 0;
   for(int i = 0; i < (*size); i++){
     /*if(message[i] == '\0'){
       write(STDOUT_FILENO, "A", 1);
@@ -343,9 +344,26 @@ char * buildwritearray(int odd, char * message, size_t * size){//Aditional argum
     else{
     write(STDOUT_FILENO, message + i, 1);
     }*/
-    sprintf(result + 4 + i, message + i, 1);
+    //write(STDOUT_FILENO, message + i, 1);
+    if(message[i] == (char) FLAG){
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
+      j++;
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
+    }else if(message[i] == (char) REPLACETRAMA2){
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      j++;
+      sprintf(result + 4 + i + j, "%c", (char) STUF7D2);
+    }
+    else{
+      bcc2 = bcc2 ^ result[ 4 + i + j];
+      sprintf(result + 4 + i + j, message + i, 1);
+    }
     //result[3 + size] = message[i];
-    bcc2 = bcc2 ^ message[i];
+    //bcc2 = bcc2 ^ message[i];
   }
   //printf("\n");
   /*
@@ -359,12 +377,88 @@ char * buildwritearray(int odd, char * message, size_t * size){//Aditional argum
   }*/
 
   //printf("\n");
-  sprintf(result + 4 + (*size), "%c", (char) bcc2);
-  sprintf(result + 5 + (*size), "%c", (char) FLAG);
+  if(bcc2 == (char) FLAG){
+    sprintf(result + 4 + (*size) + j, "%c", (char) STUFFLAG1);
+    j++;
+    sprintf(result + 4 + (*size) + j, "%c", (char) STUFFLAG2);
+  }else if(bcc2 == (char) REPLACETRAMA2){
+    sprintf(result + 4 + (*size) + j, "%c", (char) STUF7D1);
+    j++;
+    sprintf(result + 4 + (*size) + j, "%c", (char) STUF7D2);
+  }
+  else{
+    sprintf(result + 4 + (*size) + j, "%c", (char) bcc2);
+  }
+
+  sprintf(result + 5 + (*size) + j, "%c", (char) FLAG);
+  (*size) += 6 + j;
+  //Print final message
+  /*for(int i = 0; i < (*size) + j; i++){
+    write(STDOUT_FILENO, result + i, 1);
+  }*/
+  memcpy(message, result, (*size));
+  return; //result;
+}
+
+int destuffing(int odd, char * message, int * size){
   printf("\n");
-  write(STDOUT_FILENO, result, (*size) + 6);
-  printf("\n");
-  return result;
+  char resu[255] = "";
+  if(message[0] != (char) FLAG){
+    return 1;
+  }
+  if(message[1] != (char) A_SEND){
+    return 1;
+  }
+  if(message[2] != (char) (BASEIC | ((odd) * EVENIC))){
+    return 1;
+  }
+  if(message[3] != (char) ((C_SET | ((odd) * EVENIC) ^ A_SEND))){
+    return 1;
+  }
+
+  if(message[(*size) - 1] != (char) FLAG){
+    return 1;
+  }
+
+  int endchars; //Última carater da trama
+  if(message[(*size) - 2] == (char) STUF7D2  || message[(*size) - 2] == (char) STUFFLAG2){
+    endchars = (*size) - 3;
+  }
+  else{
+    endchars = (*size) - 2;
+  }
+
+  int bcc2;
+  int j = 0;
+
+  for(int i = 4; i < endchars; i++){
+    if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
+        bcc2 = bcc2 ^ message[i + j];
+      if(message[i + 1 + j] == (char) STUFFLAG2){
+        sprintf(resu + i - 4, "%c", FLAG);
+      }
+      else if(message[i + 1 + j] == (char) STUF7D2){
+        sprintf(resu + i - 4, "%c", REPLACETRAMA2);
+      }
+      else{
+        printf("A\n");
+        return 1;
+      }
+      j++;
+    }
+    else{
+      sprintf(resu + i - 4, "%c", message[i + j]);
+    }
+  }
+  (*size) -= j + 4 + 2;
+  memcpy(message, resu, (*size));
+  if(endchars == (*size) - 3){
+    return 0;
+  }
+  else if(message[(*size) - 2] == bcc2){
+    return 0;
+  }
+
 }
 
 /*Writer function
