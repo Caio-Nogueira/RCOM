@@ -7,6 +7,7 @@ volatile int SUCESS=TRUE;
 int flag_rewrite_SET = 1; //In the first input loop, dictates wether SET should be rewritten 
 int tries = 0;
 int res;
+int odd = 0;
 
 
 char result[255] = ""; //Contains the trama that will be sent next/is being sent
@@ -196,7 +197,7 @@ void llopen(int fd, flag flag){
             sigaction(SIGALRM, &action, NULL);
 
             newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-            newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+            newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
 
@@ -265,7 +266,7 @@ void llopen(int fd, flag flag){
         }
         case RECEIVER:
             newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-            newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+            newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
 
@@ -283,8 +284,6 @@ void llopen(int fd, flag flag){
               exit(-1);
             }
 
-
-              //printf("AAAAAAAAAAAAAAAAAAAAA\n");
             printf("New termios structure set\n");
 
             int n = 0;
@@ -326,7 +325,8 @@ Adds trama to array to be used in writter
 void buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
   //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
   //size_t size = 8;
-  int real_size = *size;
+  int real_size = (int) *size;
+  printf("%d\n", real_size);
   sprintf(result, "%c", (char) FLAG);
   sprintf(result + 1, "%c", (char) A_SEND);
   char current_C = (char) (C_SET | ((odd) * EVENIC));
@@ -461,17 +461,96 @@ int destuffing(int odd, char * message, int * size){
 
 }
 
+
+int readInformationFrame(int fd, char* buffer){
+  //read I frame
+  int len = 0;
+  char byte;
+  while (read(fd, &byte, 1) > 0){
+    if (byte == '\0') break;
+    buffer[len++] = byte;
+    //printf("aaa\n");
+  }
+  return len;
+}
+
+
+void DataFrameStateMachine(InformationFrameState *state, char byte){
+  switch (*state)
+  {
+  
+  case START:
+    if (byte == FLAG) *state = FLAG_RCVD;
+    break;
+  
+  case FLAG_RCVD:
+    if (byte == A_SEND) *state = A_RCVD;
+    else if (byte == FLAG){
+      *state = FLAG_RCVD;
+    }
+    break;
+  
+  case A_RCVD:
+    if (byte == EVENIC || byte == BASEIC){
+      *state = C_RCVD;
+    }
+    else if (byte == FLAG){
+      *state = FLAG_RCVD;
+    }
+    break;
+
+  case C_RCVD:
+    if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
+      *state = BCC1_RCVD;
+    }
+    else if (byte == FLAG){
+      *state = FLAG_RCVD;
+    }
+    break;
+
+  case BCC1_RCVD:
+    if (byte != FLAG) *state = DATA_RCVD;
+    else if (byte == FLAG){
+      *state = FLAG_RCVD;
+    }
+    break;
+  case DATA_RCVD:
+    if (byte == FLAG) *state = END; //sucess
+    break;
+
+  case END: break;
+
+  default:
+    break;
+  }
+}
+
+
 /*Writer function
 Ver pags 14 e 15 do guião
 */
-void llwrite(int fd, char * buffer, int length){
+int llwrite(int fd, char * buffer, int length){
+  int odd = 0;
+  char* frame = buildwritearray(odd, buffer, (size_t *) &length);
+  //frame[length] = '\0';
+  odd = (odd+1) % 2;
+  //write(STDOUT_FILENO, result, length+6);
+  write(fd, frame, length + 6);
+  printf("%d\n", length);
+  return length;
+  //TODO: implement alarm to protect I frames
+
 
 }
+
 
 /*Reader function
 Reads the buffer, (eventually removes stuffing), interprets the content and sends back trama de supervisão
 Ver pags 14 e 15 do guião
 */
 void llread(int fd, char * buffer){
+  int frame_length = readInformationFrame(fd, buffer);
+  printf("%s\n", buffer);
+  //TODO: implement stuffing/destuffing
 
 }

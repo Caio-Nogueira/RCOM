@@ -22,8 +22,8 @@ int main(int argc, char** argv)
     int c, fd;
 
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -36,29 +36,15 @@ int main(int argc, char** argv)
 
 
     fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(argv[1]); exit(-1); }
+    if (fd <0) {
+      perror(argv[1]); exit(-1); 
+    }
 
-    //llopen(fd, TRANSMITTER);
-    char message[255] = "12345678"; //120 character size for 255
-    message[3] = FLAG;
-    message[5] = REPLACETRAMA2;
-    size_t size = 8;
+    llopen(fd, TRANSMITTER);
+    char message[8] = "123a456";
+    int size = 8;
     
-    buildwritearray(0, message, &size);
-    for(int i = 0; i < (size); i++){
-      write(STDOUT_FILENO, message + i, 1);
-      printf("\n");
-    }
-      printf("\n");
-      printf("\n");
-      printf("\n");
-      printf("\n");
-    destuffing(0, message, (int *) (&size));
-
-    for(int i = 0; i < (size); i++){
-      write(STDOUT_FILENO, message + i, 1);
-      printf("\n");
-    }
+    llwrite(fd, message, size);
     /*
     
     int n = 0;

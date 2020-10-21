@@ -49,6 +49,8 @@
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 
+typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END} InformationFrameState;
+
 
 void llopen(int fd, flag flag);
 
@@ -59,3 +61,10 @@ void buildwritearray(int odd, char * message, size_t * size);
 
 int destuffing(int odd, char * message, int * size);
 
+int llwrite(int fd, char * buffer, int length);
+
+int readInformationFrame(int fd, char* buffer);
+
+void DataFrameStateMachine(InformationFrameState *state, char byte);
+
+void llread(int fd, char * buffer);
