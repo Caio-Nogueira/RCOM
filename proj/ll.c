@@ -5,6 +5,7 @@ volatile int STOP=FALSE;
 volatile int SUCESS=TRUE;
 
 int flag_rewrite_SET = 1; //In the first input loop, dictates wether SET should be rewritten 
+int flag_rewrite_frame = 1;
 int tries = 0;
 int res;
 int odd = 0;
@@ -72,6 +73,7 @@ void alarmHandler(){
   printf("alarm was called.\n");
   tries++;
   flag_rewrite_SET = 1;
+  flag_rewrite_frame = 1;
   printf("%d\n", tries);
 }
 
@@ -132,7 +134,6 @@ void BuildSet(char *set){
     sprintf((set + 2) , "%c", (char) C_SET);
     sprintf((set + 3) , "%c", (char) BCC1);
     sprintf((set + 4) , "%c", (char) FLAG);
-
 }
 
 int ReadUA(char * ua, int numChars){
@@ -223,10 +224,8 @@ void llopen(int fd, flag flag){
             char ua[6] = "";
 
             while(tries < NUM_TRIES){
-              printf("Start of loop.\n");
-              printf("%d.\n", flag_rewrite_SET);
               if(flag_rewrite_SET){
-              printf("Before write.\n");
+              //printf("Before write.\n");
                 flag_rewrite_SET = 0;
 
 
@@ -239,7 +238,7 @@ void llopen(int fd, flag flag){
                 }
               }
               res = read(fd, ua, 6);
-              if (res) printf("%s\n", ua);
+              //if (res) printf("%s\n", ua);
               
               if(res == -1){
                 printf("Faild to read UA. Trying again.\n");
@@ -259,9 +258,7 @@ void llopen(int fd, flag flag){
                 }
               }
               
-            }
-            printf("%s\n", ua);
-
+            }            
             break;
         }
         case RECEIVER:
@@ -469,7 +466,7 @@ int destuffing(int odd, char * message, int * size){
 }
 
 
-int readInformationFrame(int fd, char* buffer){
+int readInformationFrame(int fd, char* buffer, int* success){
   //read I frame
   int len = 0;
   char byte;
@@ -477,10 +474,18 @@ int readInformationFrame(int fd, char* buffer){
   while (read(fd, &byte, 1) > 0){
     //call destuffing function
     DataFrameStateMachine(&state, byte);
-    if (state == END) break;
     buffer[len++] = byte;
+    if (state == END) {
+      *success = ACK;
+      printf("ACK achieved!\n");
+      return len;
+    }
+    else if (state == ERROR){
+      break;
+    }
   }
-  return len;
+  *success = NACK;
+  return 0;
 }
 
 
@@ -496,8 +501,9 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   case FLAG_RCVD:
     printf("FLAG_RCVD\n");
     if (byte == A_SEND) *state = A_RCVD;
-    else if (byte == FLAG){
-      *state = FLAG_RCVD;
+    else {
+      *state = ERROR;
+      return;
     }
     break;
   
@@ -506,8 +512,9 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
-    else if (byte == FLAG){
-      *state = FLAG_RCVD;
+    else {
+      *state = ERROR;
+      return;
     }
     break;
 
@@ -516,16 +523,18 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
       *state = BCC1_RCVD;
     }
-    else if (byte == FLAG){
-      *state = FLAG_RCVD;
+    else {
+      *state = ERROR;
+      return;
     }
     break;
 
   case BCC1_RCVD:
     printf("BCC1_RCVD\n");
     if (byte != FLAG) *state = DATA_RCVD;
-    else if (byte == FLAG){
-      *state = FLAG_RCVD;
+    else {
+      *state = ERROR;
+      return;
     }
     break;
   case DATA_RCVD:
@@ -537,6 +546,9 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     printf("END\n");
     break;
 
+  case ERROR:
+    break;
+  
   default:
     break;
   }
@@ -548,16 +560,31 @@ Ver pags 14 e 15 do guião
 */
 int llwrite(int fd, char * buffer, int length){
   int odd = 0;
-  buildwritearray(odd, buffer, (size_t *) &length);
-  //frame[length] = '\0';
-  odd = (odd+1) % 2;
-  //write(STDOUT_FILENO, result, length+6);
-  write(fd, buffer, length);
-  printf("buffer: %s\n", buffer);
+  //buildwritearray(odd, buffer, (size_t *) &length);
+  tries = 0;
+  while (tries < NUM_TRIES){
+    if (flag_rewrite_frame){
+      flag_rewrite_frame = 0;
+      buildwritearray(odd, buffer, (size_t *) &length);
+      write(fd, buffer, length);
+      alarm(3);
+    }
+    char response[6];
+    int res = read(fd, response, 6);
+    if (res == -1) perror("fd");
+    else if (res == 6){
+      printf("Reading response!\n");
+      if (readResponse(response) == ACK){
+        alarm(0); //clear alarms
+        odd = (odd + 1) % 2;
+        break;
+      }
+      else{
+        printf("Invalid response!\n");
+      }
+    }
+  } 
   return length;
-  //TODO: implement alarm to protect I frames
-
-
 }
 
 
@@ -566,8 +593,119 @@ Reads the buffer, (eventually removes stuffing), interprets the content and send
 Ver pags 14 e 15 do guião
 */
 void llread(int fd, char * buffer){
-  int frame_length = readInformationFrame(fd, buffer);
-  printf("%s\n", buffer);
-  
-
+  int verify = -1;
+  int frame_length = readInformationFrame(fd, buffer, &verify);
+  write(STDOUT_FILENO, buffer, frame_length);
+  fflush(stdout);
+  char response[6] = "";
+  int current_N = 0; //numero de serie por parte do recetor
+  switch(verify){
+    case ACK:
+      buildRresponse(response, &current_N, ACK);
+      break;
+    case NACK:
+      buildRresponse(response, &current_N, NACK);
+      break;
+    default: break;
+  }        
+  write(fd, response, 6);
 }
+
+
+void buildRresponse(char* buffer, int *N_r, int success){
+  sprintf((buffer + 0), "%c", FLAG);
+  sprintf((buffer + 1), "%c", A_SEND);
+  char control_byte;
+  switch (success)
+  {
+  case ACK:
+    *N_r = (*N_r + 1) % 2;
+    if (*N_r == 1) {
+      control_byte = 0x85;
+    }
+    else if (*N_r == 0){
+      control_byte = 0x05;
+    }
+    else return;
+    break;
+  
+  case NACK:
+    if (*N_r == 0) {
+      control_byte = 0x01;
+    }
+    else if (*N_r == 1){
+      control_byte = 0x81;
+    }
+    else return;
+    break;
+
+  default:
+    return;
+  }
+
+  int bcc = (int) A_SEND ^ (int) control_byte;
+  sprintf((buffer + 2), "%c", (unsigned char)control_byte);
+  sprintf((buffer + 3), "%c", (char) bcc);
+  sprintf((buffer + 4), "%c", FLAG);
+  sprintf((buffer + 5), "%c", '\0');
+}
+
+
+int readResponse(char* buffer){
+  int success = -1;
+  for(int i = 0; i < 6; i++){
+    switch(i){
+      case 0:
+        if(buffer[i] != FLAG){
+          printf("FLAG error!\n");
+          return 0;
+        }
+        break;
+      case 1:
+        if(buffer[i] != A_SEND){
+          printf("A_SEND error!\n");
+          return 1;
+        }
+        break;
+      case 2:
+      {
+        unsigned char control = (unsigned char) buffer[i];
+        if(control == 0x85 || control == 0x05){
+          success = ACK;
+        }
+        else if (control == 0x81 || control == 0x01){
+          success = NACK;
+        }
+        else
+        {
+          printf("CONTROL error!\n");
+          return 2;
+        }
+        
+        break;
+      }
+      case 3:
+      {
+        char bcc;
+        bcc = buffer[1] ^ buffer[2];
+        if(buffer[i] != (char) bcc){
+          printf("Wrong bcc.\n");
+          return 3;
+        }
+        break;
+      }
+      case 4:
+        if(buffer[i] != FLAG){
+          return 4;
+        }
+    }
+  }
+  return success;
+}
+
+void llclose(int fd){
+  //TO IMPLEMENT
+}
+
+
+void 

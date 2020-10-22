@@ -33,6 +33,9 @@
 //------Information trama-------
 //flag = FLAG
 // A = A_SEND
+#define ACK 0
+#define NACK 1
+
 #define BASEIC 0x00
 #define EVENIC 0x40
 //BCC1 is A ^ C
@@ -49,7 +52,7 @@
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 
-typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END} InformationFrameState;
+typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END, ERROR} InformationFrameState;
 
 
 void llopen(int fd, flag flag);
@@ -63,8 +66,15 @@ int destuffing(int odd, char * message, int * size);
 
 int llwrite(int fd, char * buffer, int length);
 
-int readInformationFrame(int fd, char* buffer);
+int readInformationFrame(int fd, char* buffer, int* success);
 
 void DataFrameStateMachine(InformationFrameState *state, char byte);
 
 void llread(int fd, char * buffer);
+
+void buildRresponse(char* buffer, int *N_r, int success);
+
+
+int readResponse(char* buffer);
+
+void llclose(int fd);
