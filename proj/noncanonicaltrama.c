@@ -27,8 +27,9 @@ int main(int argc, char** argv)
     llopen(fd, RECEIVER);
 
     char buffer[255] = "";
-
+    while(TRUE){
     llread(fd,buffer);
+    }
 /*
     char UAresponse[255];
 

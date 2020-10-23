@@ -48,11 +48,12 @@
 #define STUF7D1 0x7D
 #define STUF7D2 0x5D
 
+#define DISC 0x0B
 
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 
-typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END, ERROR} InformationFrameState;
+typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END, ERROR, DISCA, DISCC, DISCBCC, DISCONNECT} InformationFrameState;
 
 
 void llopen(int fd, flag flag);
@@ -74,7 +75,8 @@ void llread(int fd, char * buffer);
 
 void buildRresponse(char* buffer, int *N_r, int success);
 
-
 int readResponse(char* buffer);
 
-void llclose(int fd);
+int checkdisc(char * str);
+
+int llclose(int fd);

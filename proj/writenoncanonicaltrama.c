@@ -44,7 +44,12 @@ int main(int argc, char** argv)
     char message[131084] = "123a456";
     int size = 7;
     
+    int i = 0;
+    while(i < 5){
     llwrite(fd, message, size);
+    i++;
+    }
+    llclose(fd);
     /*
     
     int n = 0;

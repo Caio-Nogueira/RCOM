@@ -445,7 +445,6 @@ int destuffing(int odd, char * message, int * size){
         sprintf(resu + i - 4, "%c", REPLACETRAMA2);
       }
       else{
-        printf("A\n");
         return 1;
       }
       j++;
@@ -471,7 +470,9 @@ int readInformationFrame(int fd, char* buffer, int* success){
   int len = 0;
   char byte;
   InformationFrameState state = START;
+    printf("Start\n");
   while (read(fd, &byte, 1) > 0){
+    fflush(stdout);
     //call destuffing function
     DataFrameStateMachine(&state, byte);
     buffer[len++] = byte;
@@ -480,10 +481,15 @@ int readInformationFrame(int fd, char* buffer, int* success){
       printf("ACK achieved!\n");
       return len;
     }
+    else if (state == DISCONNECT){
+      printf("DISC achieved!\n");
+      return -1;
+    }
     else if (state == ERROR){
       break;
     }
   }
+  printf("\n");
   *success = NACK;
   return 0;
 }
@@ -494,13 +500,17 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   {
   
   case START:
-    printf("START\n");
+    //printf("START\n");
     if (byte == FLAG) *state = FLAG_RCVD;
     break;
   
   case FLAG_RCVD:
-    printf("FLAG_RCVD\n");
+    //printf("FLAG_RCVD\n");
     if (byte == A_SEND) *state = A_RCVD;
+    else if(byte == A_Recieve){
+      *state = DISCA;
+      printf("Disconnect possibly detected.\n");
+    }
     else {
       *state = ERROR;
       return;
@@ -508,7 +518,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
   
   case A_RCVD:
-    printf("A_RCVD\n");
+    //printf("A_RCVD\n");
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
@@ -519,7 +529,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case C_RCVD:
-    printf("C_RCVD\n");
+    //printf("C_RCVD\n");
     if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
       *state = BCC1_RCVD;
     }
@@ -530,7 +540,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case BCC1_RCVD:
-    printf("BCC1_RCVD\n");
+    //printf("BCC1_RCVD\n");
     if (byte != FLAG) *state = DATA_RCVD;
     else {
       *state = ERROR;
@@ -538,17 +548,41 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     }
     break;
   case DATA_RCVD:
-    printf("DATA_RCVD\n");
-    if (byte == FLAG) *state = END; //sucess
+    //printf("DATA_RCVD\n");
+    if (byte == FLAG){ *state = END; //sucess
+      printf("End.\n");
+      }
     break;
 
   case END: 
-    printf("END\n");
+    //printf("END\n");
     break;
 
   case ERROR:
     break;
-  
+  case DISCA:
+    if(byte == DISC){
+      printf("Disconnected C.\n");
+      *state = DISCC;
+    }
+    else{
+      *state = ERROR;
+    }
+  case DISCC:
+    if(byte == DISC || A_SEND){
+      printf("Disconnect BCC.\n");
+      *state = DISCBCC;
+    }
+    else{
+      *state = ERROR;
+    }
+    break;  
+  case DISCBCC:
+    if(byte == FLAG){
+      printf("FLAG disconnect\n");
+      *state = DISCONNECT;
+    }
+    printf("\n");
   default:
     break;
   }
@@ -562,6 +596,7 @@ int llwrite(int fd, char * buffer, int length){
   int odd = 0;
   //buildwritearray(odd, buffer, (size_t *) &length);
   tries = 0;
+  flag_rewrite_frame = TRUE;
   while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
@@ -595,20 +630,55 @@ Ver pags 14 e 15 do guião
 void llread(int fd, char * buffer){
   int verify = -1;
   int frame_length = readInformationFrame(fd, buffer, &verify);
-  write(STDOUT_FILENO, buffer, frame_length);
-  fflush(stdout);
-  char response[6] = "";
-  int current_N = 0; //numero de serie por parte do recetor
-  switch(verify){
-    case ACK:
-      buildRresponse(response, &current_N, ACK);
-      break;
-    case NACK:
-      buildRresponse(response, &current_N, NACK);
-      break;
-    default: break;
-  }        
-  write(fd, response, 6);
+  if(frame_length >= 0){
+    write(STDOUT_FILENO, buffer, frame_length);
+    fflush(stdout);
+    char response[6] = "";
+    int current_N = 0; //numero de serie por parte do recetor
+      switch(verify){
+        case ACK:
+          buildRresponse(response, &current_N, ACK);
+          break;
+        case NACK:
+          buildRresponse(response, &current_N, NACK);
+          break;
+        case DISCONNECT:
+          printf("Case disconnect.\n");
+          sprintf(response, "%c", (char) FLAG);
+          sprintf(response + 1, "%c", (char) A_Recieve);
+          sprintf(response + 2, "%c", (char) DISC);
+          sprintf(response + 3, "%c", (char) (A_Recieve ^ DISC));
+          sprintf(response + 4, "%c", (char) FLAG);
+          break;
+        default: 
+          printf("Default case.\n");
+          break;
+      }
+    write(fd, response, 6);
+    }
+  else if(frame_length == -1){
+      char disc[6] = "";
+      sprintf(disc, "%c", (char) FLAG);
+      sprintf(disc + 1, "%c", (char) A_Recieve);
+      sprintf(disc + 2, "%c", (char) DISC);
+      sprintf(disc + 3, "%c", (char) (A_Recieve ^ DISC));
+      sprintf(disc +4, "%c", (char) FLAG);
+      write(fd, disc, 5);
+      alarm(3);
+      char UA[5];
+      int response = read(fd, UA, 5);
+      if(UA[0] == (char) FLAG && UA[1] == (char) A_Recieve && UA[2] == (char) C_UA && UA[3] == (char) (A_Recieve ^ C_UA) && UA[4] == (char) FLAG){
+        printf("UA detected, Ending now.\n");
+      }
+      else{
+        printf("%d\n", response);
+        for(int i = 0; i < 5; i++){
+          printf("%x", UA[i]);
+        }
+        printf("Thing recieved isn't an UA. Exiting anyways, since the most likely option by far is errors in the UA sent\n");
+      }
+      exit(0);
+  }
 }
 
 
@@ -703,9 +773,55 @@ int readResponse(char* buffer){
   return success;
 }
 
-void llclose(int fd){
-  //TO IMPLEMENT
+int checkdisc(char * str){
+  return(str[0] == (char) FLAG && str[1] == (char) A_Recieve && str[2] == (char) DISC && str[3] == (char) (A_Recieve ^ DISC) && str[4] == FLAG);
 }
 
+int llclose(int fd){
+      printf("llclose\n");
+  //TO IMPLEMENT
 
-void 
+  char disc[6] = "";
+  sprintf(disc, "%c", (char) FLAG);
+  sprintf(disc + 1, "%c", (char) A_Recieve);
+  sprintf(disc + 2, "%c", (char) DISC);
+  sprintf(disc + 3, "%c", (char) (A_Recieve ^ DISC));
+  sprintf(disc + 4, "%c", (char) FLAG);
+  char UA[6];
+  sprintf(UA, "%c", (char) FLAG);
+  sprintf(UA + 1, "%c", (char) A_Recieve);
+  sprintf(UA + 2, "%c", (char) C_UA);
+  sprintf(UA + 3, "%c", (char) (A_Recieve ^ C_UA));
+  sprintf(UA + 4, "%c", (char) FLAG);
+
+
+  tries = 0;
+  flag_rewrite_frame = TRUE;
+      printf("llclose\n");
+  while (tries < NUM_TRIES){
+    if (flag_rewrite_frame){
+      flag_rewrite_frame = 0;
+      write(fd, disc, 5);
+      alarm(3);
+      printf("Write successful\n");
+    }
+    char response[6];
+    printf("Reading\n");
+    int res = read(fd, response, 5);
+    for(int i = 0; i < 5; i++){
+      printf("%x ", (int) response[i]);
+    }
+    printf("Length: %d\n", res);
+    printf("Read successful\n");
+    if (res == -1) perror("fd");
+    else if (res == 5){
+      if(checkdisc(response)){
+        printf("Disconnect has been recieved back. Sending UA now.\n");
+        write(fd, UA, 5);
+        printf("Success\n");
+        return 6;
+      }
+    }
+  } 
+  return -1;
+}
