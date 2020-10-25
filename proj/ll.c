@@ -822,6 +822,6 @@ int llclose(int fd){
         return 6;
       }
     }
-  } 
+  }
   return -1;
 }

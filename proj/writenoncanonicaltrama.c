@@ -1,7 +1,7 @@
 /*Non-Canonical Input Processing*/
 
 
-#include "ll.h"
+#include "application.h"
 
 #define MODEMDEVICE "/dev/ttyS11"
 
@@ -12,14 +12,14 @@
 //char UA[255]; //UA array
 int UA_read = FALSE;
 
-int res;
+int res, fd;
 
 //int flag_rewrite_SET = TRUE; //In the first input loop, dictates wether SET should be rewritten 
 
 
 int main(int argc, char** argv)
 {
-    int c, fd;
+    int c;
 
     if ( (argc < 2) || 
   	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
@@ -39,8 +39,11 @@ int main(int argc, char** argv)
     if (fd <0) {
       perror(argv[1]); exit(-1); 
     }
-
+    
     llopen(fd, TRANSMITTER);
+    sendControlPacket(CONTROL_START, "pinguim.gif");
+
+    /*llopen(fd, TRANSMITTER);
     char message[131084] = "123a456";
     int size = 7;
     
@@ -48,7 +51,9 @@ int main(int argc, char** argv)
     while(i < 5){
     llwrite(fd, message, size);
     i++;
-    }
+    }*/
+
+
     llclose(fd);
     /*
     

@@ -1,5 +1,5 @@
 /*Non-Canonical Input Processing*/
-#include "ll.h"
+#include "application.h"
 
 
 int main(int argc, char** argv)
@@ -23,13 +23,16 @@ int main(int argc, char** argv)
     
     fd = open(argv[1], O_RDWR | O_NOCTTY );
     if (fd <0) {perror(argv[1]); exit(-1); }
+    char str[256];
 
     llopen(fd, RECEIVER);
 
-    char buffer[255] = "";
+    llread(fd, str);
+
+    /*char buffer[255] = "";
     while(TRUE){
     llread(fd,buffer);
-    }
+    }*/
 /*
     char UAresponse[255];
 
@@ -70,6 +73,6 @@ int main(int argc, char** argv)
 
 
     //tcsetattr(fd,TCSANOW,&oldtio);
-    close(fd);
+    llclose(fd);
     return 0;
 }
