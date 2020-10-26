@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     }
     
     llopen(fd, TRANSMITTER);
-    sendControlPacket(CONTROL_START, "pinguim.gif");
+    sendControlPacket(CONTROL_START, "pinguim.gif", fd);
 
     /*llopen(fd, TRANSMITTER);
     char message[131084] = "123a456";

@@ -361,8 +361,8 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
       
     }
 
-    printf("i: %d", i+j);
-    printf(" ; char: %c\n", result[ 4 + i + j]);
+    /*printf("i: %d", i+j);
+    printf(" ; char: %c\n", result[ 4 + i + j]);*/
     //result[3 + size] = message[i];
     //bcc2 = bcc2 ^ message[i];
   }
@@ -631,8 +631,8 @@ void llread(int fd, char * buffer){
   int verify = -1;
   int frame_length = readInformationFrame(fd, buffer, &verify);
   if(frame_length >= 0){
-    write(STDOUT_FILENO, buffer, frame_length);
-    fflush(stdout);
+    //write(STDOUT_FILENO, buffer, frame_length);
+    //fflush(stdout);
     char response[6] = "";
     int current_N = 0; //numero de serie por parte do recetor
       switch(verify){

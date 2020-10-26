@@ -27,7 +27,8 @@ int main(int argc, char** argv)
 
     llopen(fd, RECEIVER);
 
-    llread(fd, str);
+    //llread(fd, str);
+    readControlPacket(fd);
 
     /*char buffer[255] = "";
     while(TRUE){

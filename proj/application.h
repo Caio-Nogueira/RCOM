@@ -25,6 +25,10 @@ int min(const int a, const int b);
 
 void readFile(char *filename);
 
-void sendControlPacket();
+void sendControlPacket(int controlCamp, char* filename, int fd);
+
+void readControlPacket(int fd);
+
+unsigned verifyControlPacket(char* frame);
 
 void sendDataPacket();
