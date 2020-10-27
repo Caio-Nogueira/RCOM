@@ -12,7 +12,7 @@ int odd = 0;
 
 linkLayer ll = {0xB38400, 0};
 
-char result[255] = ""; //Contains the trama that will be sent next/is being sent
+char result[MAX_TRAMA_SIZE] = ""; //Contains the trama that will be sent next/is being sent
 
 int verifyUA(char *UAresponse){//char str[]){
     printf("Attempt\n");
@@ -324,7 +324,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
   //size_t size = 8;
   int real_size = (int) *size;
-  printf("real_size: %d\n", real_size);
+  //printf("real size: %d\n", real_size);
   sprintf(result, "%c", (unsigned char) FLAG);
   sprintf(result + 1, "%c", (unsigned char) A_SEND);
   char current_C = (char) (C_SET | ((ll.sequenceNumber) * EVENIC));
@@ -343,13 +343,17 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
     write(STDOUT_FILENO, message + i, 1);
     }*/
     //write(STDOUT_FILENO, message + i, 1);
+    //printf("Message %d: %d\n", i, (int) message[i]);
+    //printf("Result 4 + i + j: %d\n", (int) result[4 + i + j]);
     if(message[i] == (char) FLAG){      
+      //printf("C\n");
       sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
       bcc2 = bcc2 ^ result[ 4 + i + j];
       j++;      
       sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
       bcc2 = bcc2 ^ result[ 4 + i + j];
     }else if(message[i] == (char) REPLACETRAMA2){
+      //printf("B\n");
       sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
       bcc2 = bcc2 ^ result[ 4 + i + j];      
       j++;
@@ -357,16 +361,22 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
       bcc2 = bcc2 ^ result[ 4 + i + j];
     }
     else{      
-      sprintf(result + 4 + i + j, message + i, 1);
-      bcc2 = bcc2 ^ result[ 4 + i + j];
+      //printf("A\n");
+      result[4 + i + j] = message[i];
+      //printf("?\n");
+      //sprintf(result + 4 + i + j, message + i, 1);
+      bcc2 = bcc2 ^ result[4 + i + j];
       
     }
 
+    //printf("%d\n", 4 + i + j);
     /*printf("i: %d", i+j);
     printf(" ; char: %c\n", result[ 4 + i + j]);*/
     //result[3 + size] = message[i];
     //bcc2 = bcc2 ^ message[i];
   }
+
+  printf("End of a loop.\n");
   //printf("%s\n", result);
   //printf("\n");
   /*
@@ -407,9 +417,9 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
 }
 
 int destuffing(int isOdd, char * message, int * size){
-  printf("\n");
-  char resu[255] = "";
-  if(message[0] != (char) FLAG){
+  printf("Beggining destuffing.\n");
+  char resu[65536 + 4] = "";
+  /*if(message[0] != (char) FLAG){
     return 1;
   }
   if(message[1] != (char) A_SEND){
@@ -424,7 +434,8 @@ int destuffing(int isOdd, char * message, int * size){
 
   if(message[(*size) - 1] != (char) FLAG){
     return 1;
-  }
+  }*/
+  printf("destuffing conditions over.\n");
 
   int endchars; //Última carater da trama
   if(message[(*size) - 2] == (char) STUF7D2  || message[(*size) - 2] == (char) STUFFLAG2){
@@ -457,6 +468,7 @@ int destuffing(int isOdd, char * message, int * size){
   }
   (*size) -= j + 4 + 2;
   memcpy(message, resu, (*size));
+  printf("Destuffing: %d", resu[0]);
   if(endchars == (*size) - 3){
     return 0;
   }
@@ -646,10 +658,12 @@ void llread(int fd, char * buffer){
     //fflush(stdout);
     char response[6] = "";
     int current_N = 0; //numero de serie por parte do recetor
+    printf("Verify %d\n", verify);
       switch(verify){
         case ACK:
           buildRresponse(response, &current_N, ACK);
           destuffing(odd, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
+          printf("Frame length: %d\n", frame_length);
           break;
         case NACK:
           buildRresponse(response, &current_N, NACK);

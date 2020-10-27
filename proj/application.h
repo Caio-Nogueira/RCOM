@@ -11,7 +11,6 @@
 #define MAX_CONTROL_SIZE 1024
 #define CHUNK_LEN 65536
 
-
 typedef struct{
     char file_name[256];
     int fileDescriptor;
@@ -41,3 +40,5 @@ void receiveDataPackets(int fd);
 int getDataLen(char* frame);
 
 void readPackets(int fd, char* filename);
+
+void createFile(char *filename);

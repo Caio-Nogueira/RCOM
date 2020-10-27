@@ -10,6 +10,8 @@
 #include <signal.h>
 
 
+#define MAX_TRAMA_SIZE 14000 //change later
+
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
 
