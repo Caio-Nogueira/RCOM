@@ -10,6 +10,7 @@ int tries = 0;
 int res;
 int odd = 0;
 
+linkLayer ll = {0xB38400, 0};
 
 char result[255] = ""; //Contains the trama that will be sent next/is being sent
 
@@ -197,7 +198,7 @@ void llopen(int fd, flag flag){
             action.sa_flags = 0;
             sigaction(SIGALRM, &action, NULL);
 
-            newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+            newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
@@ -324,9 +325,9 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   //size_t size = 8;
   int real_size = (int) *size;
   printf("real_size: %d\n", real_size);
-  sprintf(result, "%c", (char) FLAG);
-  sprintf(result + 1, "%c", (char) A_SEND);
-  char current_C = (char) (C_SET | ((odd) * EVENIC));
+  sprintf(result, "%c", (unsigned char) FLAG);
+  sprintf(result + 1, "%c", (unsigned char) A_SEND);
+  char current_C = (char) (C_SET | ((ll.sequenceNumber) * EVENIC));
   sprintf(result + 2, "%c", current_C ^ A_SEND);
   sprintf(result + 3, "%c", (char) (A_SEND | current_C));
   //sprintf(result + 4, "%s", message); //Check if this works with '\0' later
@@ -399,8 +400,9 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   /*for(int i = 0; i < (*size) + j; i++){
     write(STDOUT_FILENO, result + i, 1);
   }*/
-  printf("result: %s\n", result);
-  memcpy(message, result, 255);
+  write(STDOUT_FILENO, result, 6 + (real_size) + j);
+  fflush(stdout);
+  memcpy(message, result, 6 + (real_size) + j);
   return; //result;
 }
 
@@ -470,10 +472,11 @@ int readInformationFrame(int fd, char* buffer, int* success){
   int len = 0;
   char byte;
   InformationFrameState state = START;
-    printf("Start\n");
+  printf("Start\n");
   while (read(fd, &byte, 1) > 0){
-    fflush(stdout);
+    //fflush(stdout);
     //call destuffing function
+    //printf("%c\n", byte);
     DataFrameStateMachine(&state, byte);
     buffer[len++] = byte;
     if (state == END) {
@@ -486,6 +489,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
       return -1;
     }
     else if (state == ERROR){
+      printf("ERROR.\n");
       break;
     }
   }
@@ -501,24 +505,26 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   
   case START:
     //printf("START\n");
+    printf("byte: %d\n", (int) byte);
     if (byte == FLAG) *state = FLAG_RCVD;
     break;
   
   case FLAG_RCVD:
-    //printf("FLAG_RCVD\n");
+    printf("FLAG_RCVD\n");
     if (byte == A_SEND) *state = A_RCVD;
     else if(byte == A_Recieve){
       *state = DISCA;
       printf("Disconnect possibly detected.\n");
     }
     else {
+      printf("Error byte: %d\n", (int) byte);
       *state = ERROR;
       return;
     }
     break;
   
   case A_RCVD:
-    //printf("A_RCVD\n");
+    printf("A_RCVD\n");
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
@@ -529,7 +535,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case C_RCVD:
-    //printf("C_RCVD\n");
+    printf("C_RCVD\n");
     if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
       *state = BCC1_RCVD;
     }
@@ -594,7 +600,6 @@ Ver pags 14 e 15 do guião
 */
 int llwrite(int fd, char * buffer, int length){
   int odd = 0;
-  //buildwritearray(odd, buffer, (size_t *) &length);
   tries = 0;
   flag_rewrite_frame = TRUE;
   while (tries < NUM_TRIES){
@@ -606,12 +611,17 @@ int llwrite(int fd, char * buffer, int length){
     }
     char response[6];
     int res = read(fd, response, 6);
-    if (res == -1) perror("fd");
+    if (res == -1){
+      perror("fd");
+      sleep(1);
+    }
     else if (res == 6){
       printf("Reading response!\n");
       if (readResponse(response) == ACK){
         alarm(0); //clear alarms
         odd = (odd + 1) % 2;
+        ll.sequenceNumber++;
+        ll.sequenceNumber %= 2;
         break;
       }
       else{
@@ -662,7 +672,7 @@ void llread(int fd, char * buffer){
       sprintf(disc + 1, "%c", (char) A_Recieve);
       sprintf(disc + 2, "%c", (char) DISC);
       sprintf(disc + 3, "%c", (char) (A_Recieve ^ DISC));
-      sprintf(disc +4, "%c", (char) FLAG);
+      sprintf(disc + 4, "%c", (char) FLAG);
       write(fd, disc, 5);
       alarm(3);
       char UA[5];
@@ -675,7 +685,7 @@ void llread(int fd, char * buffer){
         for(int i = 0; i < 5; i++){
           printf("%x", UA[i]);
         }
-        printf("Thing recieved isn't an UA. Exiting anyways, since the most likely option by far is errors in the UA sent\n");
+        printf("Thing received isn't an UA. Exiting anyways, since the most likely option by far is errors in the UA sent\n");
       }
       exit(0);
   }
@@ -779,7 +789,6 @@ int checkdisc(char * str){
 
 int llclose(int fd){
       printf("llclose\n");
-  //TO IMPLEMENT
 
   char disc[6] = "";
   sprintf(disc, "%c", (char) FLAG);

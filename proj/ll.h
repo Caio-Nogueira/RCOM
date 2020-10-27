@@ -55,6 +55,10 @@ typedef enum {TRANSMITTER, RECEIVER} flag;
 
 typedef enum {START, FLAG_RCVD, A_RCVD, C_RCVD, BCC1_RCVD, DATA_RCVD, END, ERROR, DISCA, DISCC, DISCBCC, DISCONNECT} InformationFrameState;
 
+typedef struct{
+    unsigned int sequenceNumber;
+    int baudrate;
+}linkLayer;
 
 void llopen(int fd, flag flag);
 

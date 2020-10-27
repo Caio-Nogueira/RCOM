@@ -8,12 +8,14 @@
 #define T_FILE_SIZE 0
 #define T_FILE_NAME 1
 #define MAX_CONTROL_SIZE 1024
+#define CHUNK_LEN 1024
 
 
 typedef struct{
     char file_name[256];
     int fileDescriptor;
     int fileSize;
+    FILE* file;
     flag status;
 }applicationLayer;
 
@@ -31,4 +33,8 @@ void readControlPacket(int fd);
 
 unsigned verifyControlPacket(char* frame);
 
-void sendDataPacket();
+void sendDataPackets(int fd, char* filename);
+
+void receiveDataPackets(int fd);
+
+void getData(char* frame, char* result);

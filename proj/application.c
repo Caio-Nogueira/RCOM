@@ -30,6 +30,7 @@ void readFile(char *filename){
     memcpy(application.file_name, filename, 256);
     application.fileSize = file_size; //size (in bytes)
     application.fileDescriptor = fd;
+    application.file = myfile;
     
 }
 
@@ -37,7 +38,7 @@ void readFile(char *filename){
 void sendControlPacket(int controlCamp, char* filename, int fd){
     unsigned char controlPacket[MAX_CONTROL_SIZE] = "";
     sprintf(controlPacket, "%c", (unsigned char) controlCamp);
-    printf("Sending packet control.\n");
+    //printf("Sending packet control.\n");
     readFile(filename);
     //send file size
     char T1 = (unsigned char) 0;
@@ -146,7 +147,7 @@ void readControlPacket(int fd){ //  receiver port filedes
         printf("\nReading file size\n");
 
         L1 = (int) buffer[2];
-        printf("L1: %d\n", L1);
+        //printf("L1: %d\n", L1);
         char* V1 = malloc(L1*sizeof(char));
         int j = 0;
         for (int i = 3; i < 3+L1; i++){
@@ -154,7 +155,7 @@ void readControlPacket(int fd){ //  receiver port filedes
         }
     }
     
-    printf("\nT2: %d\n", (int) buffer[3+L1]);
+    //printf("\nT2: %d\n", (int) buffer[3+L1]);
     if (buffer[3+L1] == (char) 0x01){      //file_name
         printf("Reading file name\n");
         L2 = (int) buffer[4+L1];
@@ -166,7 +167,7 @@ void readControlPacket(int fd){ //  receiver port filedes
             
         }
     }
-    printf("Reading control packet.\n");
+    printf("Control packet read.\n");
     //printf("%s\n", filename);
 }
 
@@ -177,6 +178,69 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
     return (frame[4] == (char) CONTROL_START || frame[4] == (char) CONTROL_END);
 }
 
-void sendDataPacket(){
-    //TODO
+void sendDataPackets(int fd, char* filename){
+    char dataPacket[256];
+    int n_sequence = 0;    
+    int bytesRead = 0;
+    unsigned char buf[CHUNK_LEN];
+    //int test = open("test.txt", O_WRONLY | O_APPEND);
+    printf("teste.\n");
+    while (bytesRead < application.fileSize){
+        int bytes = read(application.fileDescriptor, &buf, CHUNK_LEN);
+        bytesRead += bytes;
+        printf("nbytes: %d\n", bytes);
+        sprintf(dataPacket, "%c", (char) 0x01); //valor: 1 ---> dados
+        sprintf(dataPacket + 1, "%c", (char)(n_sequence % 255));
+        int L2 = bytes / 256;
+        int L1 = bytes % 256;
+        printf("L2: %d ; L1: %d\n", L2, L1);
+        sprintf(dataPacket + 2, "%c", (char) L2);
+        sprintf(dataPacket + 3, "%c", (char) L1);
+        for (int i = 0; i < 256*L2 + L1; i++){
+            sprintf(dataPacket + 4 + i, "%c", buf[i]);
+        }
+        //printf("L2: %d ; L1: %d\n", dataPacket[2], dataPacket[3]);
+        llwrite(fd, dataPacket, CHUNK_LEN+4);        
+        n_sequence++;
+    }
+    sendControlPacket(CONTROL_END, filename, fd);
+
+}
+
+
+void receiveDataPackets(int fd){
+    unsigned char buf[1028];
+    int dest = open("dest/pinguim.gif", O_CREAT | O_WRONLY | O_APPEND, 0644);
+
+    if (dest == -1){
+        perror("dest\n");
+    }
+
+    while (1){
+        printf("\nReading.\n");
+        llread(fd, buf);
+        //write(STDOUT_FILENO, buf, 1028);
+        //printf("")
+        char bytes[CHUNK_LEN]; 
+        if (buf[4] == CONTROL_END) break;
+        getData(buf, bytes);
+        printf("N: %d\n",(unsigned int) buf[5]);
+        write(dest, bytes, CHUNK_LEN);
+    }
+    readControlPacket(fd);
+}
+
+
+void getData(char* frame, char* result){ //read data packets -> returns array with bytes to be added to the destination file
+    if (frame[4] != (char) 0x01) return;
+    printf("N: %d\n", (int) frame[5]);
+    printf("C: %d\n", (int) frame[4]);
+    int L2 = (int) frame[6];
+    int L1 = (int) frame[7];
+    printf("L2: %d ; L1: %d\n", L2, L1);
+    int j = 0;
+    for (int i = 0; i < 256*L2 + L1; i++){
+        sprintf(result+j, "%c", frame[8+i]);
+        j++;
+    }
 }

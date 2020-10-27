@@ -26,9 +26,12 @@ int main(int argc, char** argv)
     char str[256];
 
     llopen(fd, RECEIVER);
+    readControlPacket(fd);
+    receiveDataPackets(fd);
 
     //llread(fd, str);
-    readControlPacket(fd);
+    //readControlPacket(fd);
+
 
     /*char buffer[255] = "";
     while(TRUE){
