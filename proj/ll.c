@@ -406,7 +406,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   return; //result;
 }
 
-int destuffing(int odd, char * message, int * size){
+int destuffing(int isOdd, char * message, int * size){
   printf("\n");
   char resu[255] = "";
   if(message[0] != (char) FLAG){
@@ -482,6 +482,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
     if (state == END) {
       *success = ACK;
       printf("ACK achieved!\n");
+      printf("len: %d\n", len);
       return len;
     }
     else if (state == DISCONNECT){
@@ -648,6 +649,7 @@ void llread(int fd, char * buffer){
       switch(verify){
         case ACK:
           buildRresponse(response, &current_N, ACK);
+          destuffing(odd, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
           break;
         case NACK:
           buildRresponse(response, &current_N, NACK);
@@ -664,7 +666,7 @@ void llread(int fd, char * buffer){
           printf("Default case.\n");
           break;
       }
-    write(fd, response, 6);
+      write(fd, response, 6);
     }
   else if(frame_length == -1){
       char disc[6] = "";

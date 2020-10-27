@@ -26,8 +26,7 @@ int main(int argc, char** argv)
     char str[256];
 
     llopen(fd, RECEIVER);
-    readControlPacket(fd);
-    receiveDataPackets(fd);
+    readPackets(fd, "dest/pinguim.gif");
 
     //llread(fd, str);
     //readControlPacket(fd);
