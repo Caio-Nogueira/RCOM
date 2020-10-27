@@ -1,6 +1,7 @@
 #pragma once
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <math.h> //For pow(base, exponent);
 #include "ll.h"
 
 #define CONTROL_START 2

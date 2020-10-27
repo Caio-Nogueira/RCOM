@@ -54,7 +54,7 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
     L2 = strlen(V2);
 
     sprintf((controlPacket + 1), "%c", T1);
-    sprintf((controlPacket + 2), "%c", (unsigned char) L1);
+    //sprintf((controlPacket + 2), "%c", (unsigned char) L1);
 
 
     //int file_size_2 = application.fileSize;
@@ -80,8 +80,9 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
         controlPacket[3 + num_bytes - num_bytes_2] = (unsigned char) file_size_3 & 0xFF;
     }
 
+    controlPacket[2] = (unsigned char) num_bytes;
     file_size_3 = application.fileSize;
-    printf("Last byte: %d\n", file_size_3 & 0xFF);
+    //printf("Last byte: %d\n", file_size_3 & 0xFF);
     controlPacket[2 + num_bytes] = (unsigned char) file_size_3 & 0xFF;
 
 /*
@@ -134,9 +135,38 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
 
 
 void readControlPacket(int fd){ //  receiver port filedes
+    char string[256];
+    llread(fd, string);
+    
+    int sizeArg0 = (int) string[2];
+    int sizeArg1 = (int) string[2 + 2 + sizeArg0];
+
+    printf("Size argument 0: %d\n", sizeArg0);
+    printf("Size argument 1: %d\n", sizeArg1);
+
+    for(int i = 0; i < sizeArg0 + sizeArg1 + 5; i++){
+        printf("%d ", (unsigned int) string[i] & 0xFF);
+    }
+
+    int file_size = 0;
+    int a = 1;
+    for(int i = 0; i < sizeArg0; i++){
+        a *= 256;
+        file_size += (((unsigned int) string[2 + sizeArg0 - i]) & 0xFF) * a / 256;
+    }
+
+    printf("File size: %d\n", file_size);
+
+    char name[256];
+    for(int i = 2 + 2 + sizeArg0 + 1; i < 2 + 2 + sizeArg0 + 1 + sizeArg1; i++){
+        sprintf(name - (2 + 2 + sizeArg0 + 1) + i, "%c",  string[i]);
+    }
+    printf("Filename: %s\n", name);
+
+/*
     char str[256];
     llread(fd, str);
-    char* buffer = str+4; //skip FLAG, A, C, and BCC1
+    char* buffer = str;//+4; //skip FLAG, A, C, and BCC1
     write(STDOUT_FILENO, buffer, 50);
     fflush(stdout);
     int L1, L2;
@@ -167,7 +197,7 @@ void readControlPacket(int fd){ //  receiver port filedes
         }
     }
     printf("Reading control packet.\n");
-    //printf("%s\n", filename);
+    //printf("%s\n", filename);*/
 }
 
 

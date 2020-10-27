@@ -404,7 +404,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   return; //result;
 }
 
-int destuffing(int odd, char * message, int * size){
+int destuffing(int isOdd, char * message, int * size){
   printf("\n");
   char resu[255] = "";
   if(message[0] != (char) FLAG){
@@ -442,7 +442,6 @@ int destuffing(int odd, char * message, int * size){
         sprintf(resu + i - 4, "%c", FLAG);
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
-        sprintf(resu + i - 4, "%c", REPLACETRAMA2);
       }
       else{
         return 1;
@@ -638,6 +637,7 @@ void llread(int fd, char * buffer){
       switch(verify){
         case ACK:
           buildRresponse(response, &current_N, ACK);
+          destuffing(odd, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
           break;
         case NACK:
           buildRresponse(response, &current_N, NACK);
@@ -654,7 +654,7 @@ void llread(int fd, char * buffer){
           printf("Default case.\n");
           break;
       }
-    write(fd, response, 6);
+      write(fd, response, 6);
     }
   else if(frame_length == -1){
       char disc[6] = "";
