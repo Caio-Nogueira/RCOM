@@ -638,8 +638,10 @@ int llwrite(int fd, char * buffer, int length){
   while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
-      printf("Length: %d\n", length);
+      printf("\n\n\n\n\n");
+      printf("Lengthas: %d\n", length);
       buildwritearray(odd, buffer, (size_t *) &length);
+      printf("Lengthaw: %d\n", length);
       write(fd, buffer, length);
       alarm(3);
     }
@@ -662,7 +664,7 @@ int llwrite(int fd, char * buffer, int length){
         printf("Invalid response!\n");
       }
     }
-  } 
+  }
   return length;
 }
 

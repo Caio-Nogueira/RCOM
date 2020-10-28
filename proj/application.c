@@ -136,7 +136,8 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
     }
 
     //printf("size of packet: %d\n", 5+num_bytes+j);
-    llwrite(fd, controlPacket, 5+num_bytes+j);
+    int bytes_written = llwrite(fd, controlPacket, 5+num_bytes+j);
+    printf("bytes written: %d\n", bytes_written);
     //llwrite(fd, controlPacket, 5+L1+L2);
     printf("Packet control sent.\n");
 
@@ -218,14 +219,15 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
 }
 
 void sendDataPackets(int fd, char* filename){
-    char dataPacket[CHUNK_LEN+4];
+    int number_bytes = 50;
+    char dataPacket[CHUNK_LEN+5];
     int n_sequence = 0;    
     int bytesRead = 0;
-    unsigned char buf[CHUNK_LEN];
+    unsigned char buf[CHUNK_LEN+1];
     //int test = open("test.txt", O_WRONLY | O_APPEND);
     //printf("teste.\n");
     while (bytesRead < application.fileSize){
-        int bytes = read(application.fileDescriptor, &buf, CHUNK_LEN);
+        int bytes = read(application.fileDescriptor, &buf, number_bytes);//number_bytes);
         bytesRead += bytes;
         //printf("nbytes: %d\n", bytes);
         sprintf(dataPacket, "%c", (char) 0x01); //valor: 1 ---> dados
