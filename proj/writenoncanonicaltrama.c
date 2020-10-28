@@ -43,6 +43,7 @@ int main(int argc, char** argv)
     llopen(fd, TRANSMITTER);
     sendControlPacket(CONTROL_START, "pinguim.gif", fd);
     sendDataPackets(fd, "pinguim.gif");
+    printf("BCSAC\n");
     //sendControlPacket(CONTROL_END, "pinguim.gif", fd);
 
     

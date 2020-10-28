@@ -42,13 +42,14 @@ void createFile(char *filename){
 }
 
 void sendControlPacket(int controlCamp, char* filename, int fd){
-    unsigned char controlPacket[MAX_CONTROL_SIZE] = "";
+    unsigned char controlPacket[MAX_CONTROL_SIZE + 5] = "";
     sprintf(controlPacket, "%c", (unsigned char) controlCamp);
     //printf("Sending packet control.\n");
     readFile(filename);
     //send file size
     char T1 = (unsigned char) 0;
     int L1 = sizeof(application.fileSize);
+    printf("L1 = %d\n", L1);
     int file_size = application.fileSize;
 
     
@@ -120,11 +121,13 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
     */
 
     sprintf(controlPacket + 3 + num_bytes, "%c", T2);
-    sprintf(controlPacket + 4 + num_bytes, "%c", (unsigned char) L2);
+    //sprintf(controlPacket + 4 + num_bytes, "%c", (unsigned char) L2);
+    controlPacket[4 + num_bytes] = (unsigned char) L2;
     //strcat(controlPacket, V2);
     int j = 0;
     for (int i = 0; i < L2; i++){
-        sprintf(controlPacket + 5 + num_bytes + j, "%c", filename[i]);
+        controlPacket[5 + num_bytes + j] = filename[i];
+        //sprintf(controlPacket + 5 + num_bytes + j, "%c", filename[i]);
         j++;
     }
 
@@ -132,8 +135,9 @@ void sendControlPacket(int controlCamp, char* filename, int fd){
         printf("%d ", (int) controlPacket[l]);   
     }
 
-
-    llwrite(fd, controlPacket, 5+L1+L2);
+    //printf("size of packet: %d\n", 5+num_bytes+j);
+    llwrite(fd, controlPacket, 5+num_bytes+j);
+    //llwrite(fd, controlPacket, 5+L1+L2);
     printf("Packet control sent.\n");
 
 
@@ -232,15 +236,17 @@ void sendDataPackets(int fd, char* filename){
         sprintf(dataPacket + 2, "%c", (char) L2);
         sprintf(dataPacket + 3, "%c", (char) L1);
         for (int i = 0; i < 256*L2 + L1; i++){
-            sprintf(dataPacket + 4 + i, "%c", buf[i]);
+            //sprintf(dataPacket + 4 + i, "%c", buf[i]);
+            dataPacket[4 + i] = buf[i];
         }
         //printf("L2: %d ; L1: %d\n", dataPacket[2], dataPacket[3]);
         int f_size = min(CHUNK_LEN + 4, application.fileSize);
+        f_size = min(f_size, 256 * L2 + L1 + 4);
         llwrite(fd, dataPacket, f_size);        
         n_sequence++;
     }
     sendControlPacket(CONTROL_END, filename, fd);
-
+    printf("CCCC\n");
 }
 
 void readPackets(int fd, char* filename){
@@ -250,8 +256,9 @@ void readPackets(int fd, char* filename){
     if (dest == -1){
         perror("dest\n");
     }
-    char buf[65540];
+    char buf[MAX_TRAMA_SIZE];
     while(1){
+        //printf("%lu\n", sizeof(buf));
         llread(fd, buf);
         printf("Buf char: %d", (int) buf[0]);
         if (buf[0] == (char) 0x01) {

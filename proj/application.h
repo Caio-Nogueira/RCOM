@@ -9,7 +9,9 @@
 #define T_FILE_SIZE 0
 #define T_FILE_NAME 1
 #define MAX_CONTROL_SIZE 1024
-#define CHUNK_LEN 65536
+#define CHUNK_LEN 500
+
+#define MAX_TRAMA_SIZE 14000 //change later
 
 typedef struct{
     char file_name[256];

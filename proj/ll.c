@@ -347,17 +347,23 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
     //printf("Result 4 + i + j: %d\n", (int) result[4 + i + j]);
     if(message[i] == (char) FLAG){      
       //printf("C\n");
-      sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
+      result[4 + i + j] = (char) STUFFLAG1;
+      
+      //sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
       bcc2 = bcc2 ^ result[ 4 + i + j];
-      j++;      
-      sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
+      j++;
+      
+      result[4 + i + j] = (char) STUFFLAG2;
+      //sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
       bcc2 = bcc2 ^ result[ 4 + i + j];
     }else if(message[i] == (char) REPLACETRAMA2){
       //printf("B\n");
-      sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
+      //sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
+      result[4 + i + j] = (char) STUF7D1;
       bcc2 = bcc2 ^ result[ 4 + i + j];      
       j++;
-      sprintf(result + 4 + i + j, "%c", (char) STUF7D2);
+      result[4 + i + j] = (char) STUF7D2;
+      //sprintf(result + 4 + i + j, "%c", (char) STUF7D2);
       bcc2 = bcc2 ^ result[ 4 + i + j];
     }
     else{      
@@ -403,22 +409,23 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
     sprintf(result + 4 + (real_size) + j, "%c", (char) bcc2); 
   }
   //printf("bcc: %c", *(result + 4 + (real_size) + j));
-  sprintf(result + 5 + (real_size) + j, "%c", (char) FLAG);
+  result[5 + (real_size) + j] = (char) FLAG;
+  //sprintf(result + 5 + (real_size) + j, "%c", (char) FLAG);
   (*size) += 6 + j;
   real_size = *size;
   //Print final message
   /*for(int i = 0; i < (*size) + j; i++){
     write(STDOUT_FILENO, result + i, 1);
   }*/
-  write(STDOUT_FILENO, result, 6 + (real_size) + j);
-  fflush(stdout);
-  memcpy(message, result, 6 + (real_size) + j);
+  //write(STDOUT_FILENO, result, 6 + (real_size) + j);
+  printf("Size: %d\n", real_size);
+  memcpy(message, result, (real_size));
   return; //result;
 }
 
 int destuffing(int isOdd, char * message, int * size){
   printf("Beggining destuffing.\n");
-  char resu[65536 + 4] = "";
+  char resu[CHUNK_SIZE + 5] = "";
   /*if(message[0] != (char) FLAG){
     return 1;
   }
@@ -436,6 +443,10 @@ int destuffing(int isOdd, char * message, int * size){
     return 1;
   }*/
   printf("destuffing conditions over.\n");
+  printf("Size of message: %lu\n", sizeof(message));
+  printf("%d\n", message[7]);
+  printf("%d\n", message[8]);
+  printf("Size of result: %lu\n", sizeof(resu));
 
   int endchars; //Última carater da trama
   if(message[(*size) - 2] == (char) STUF7D2  || message[(*size) - 2] == (char) STUFFLAG2){
@@ -447,35 +458,44 @@ int destuffing(int isOdd, char * message, int * size){
 
   int bcc2;
   int j = 0;
+  printf("Went past first part.\n");
 
   for(int i = 4; i < endchars; i++){
     if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
+      printf("first if.\n");
         bcc2 = bcc2 ^ message[i + j];
       if(message[i + 1 + j] == (char) STUFFLAG2){
+      printf("second if.\n");
         sprintf(resu + i - 4, "%c", FLAG);
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
+      printf("third if.\n");
         sprintf(resu + i - 4, "%c", REPLACETRAMA2);
       }
       else{
+      printf("else.\n");
         return 1;
       }
       j++;
     }
     else{
+      printf("normal cases.\n");
       sprintf(resu + i - 4, "%c", message[i + j]);
     }
   }
   (*size) -= j + 4 + 2;
+  printf("reached memcpy.\n");
+  printf("%d\n", endchars);
+  printf("%d\n", (*size));
   memcpy(message, resu, (*size));
-  printf("Destuffing: %d", resu[0]);
+  //printf("Destuffing: %d", resu[0]);
   if(endchars == (*size) - 3){
     return 0;
   }
   else if(message[(*size) - 2] == bcc2){
     return 0;
   }
-
+  return 0;
 }
 
 
@@ -618,6 +638,7 @@ int llwrite(int fd, char * buffer, int length){
   while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
+      printf("Length: %d\n", length);
       buildwritearray(odd, buffer, (size_t *) &length);
       write(fd, buffer, length);
       alarm(3);
@@ -663,7 +684,8 @@ void llread(int fd, char * buffer){
         case ACK:
           buildRresponse(response, &current_N, ACK);
           destuffing(odd, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
-          printf("Frame length: %d\n", frame_length);
+          //printf("Frame length: %d\n", frame_length);
+          printf("C\n");
           break;
         case NACK:
           buildRresponse(response, &current_N, NACK);
