@@ -235,6 +235,7 @@ void llopen(int fd, flag flag){
                 alarm(3);
                 if(res != 5){
                   printf("Did not write 5 characters. Exiting\n");
+
                   exit(0);
                 }
               }
