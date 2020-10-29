@@ -166,7 +166,7 @@ int ReadUA(char * ua, int numChars){
         }
     }
   }
-  return 6;
+  return 5;
 }
 
 
@@ -230,17 +230,17 @@ void llopen(int fd, flag flag){
                 flag_rewrite_SET = 0;
 
 
-                res = write(fd,set,6);
+                res = write(fd,set,5);
                 printf("SET message sent\n");
                 alarm(3);
-                if(res != 6){
+                if(res != 5){
                   printf("Did not write 6 characters. Exiting\n");
                   exit(0);
                 }
               }
               //res = read(fd, ua, 6);
               int num_times = 0;
-              while(num_times < 6){
+              while(num_times < 5){
                 res = read(fd, ua + num_times, 1);
                 if(res != -1){
                   num_times++;
@@ -255,7 +255,7 @@ void llopen(int fd, flag flag){
               if(res == -1){
                 printf("Faild to read UA.\n"); //Trying again.\n");
               }
-              else if(res != 6){
+              else if(res != 5){
                 printf("UA doesn't have the correct length, It should be 6, it is %d.\n", res);
               }
               else{
@@ -302,13 +302,13 @@ void llopen(int fd, flag flag){
             char str[255];
             
             int num_times = 0;
-            while(num_times < 6){
+            while(num_times < 5){
               res = read(fd, str + num_times, 1);
               if(res != -1){
                 num_times++;
               }
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 5; i++){
               printf("%d", (int) str[i] & 0xFF);
             }
             //res = read(fd,str,6);   /* returns after 6 chars have been input */
@@ -318,7 +318,7 @@ void llopen(int fd, flag flag){
               printf("Error in SET message\n");
               exit(-1);
             }
-            res = write(STDOUT_FILENO,str,6);  
+            res = write(STDOUT_FILENO,str,5);  
 
             char UAsend[255];
 
@@ -332,7 +332,7 @@ void llopen(int fd, flag flag){
 
             
             printf("Sending UA.\n");
-            res = write(fd, UAsend, 6);
+            res = write(fd, UAsend, 5);
             printf("%s\n", UAsend);
             printf("UA sent.\n");
 
