@@ -238,11 +238,22 @@ void llopen(int fd, flag flag){
                   exit(0);
                 }
               }
-              res = read(fd, ua, 6);
+              //res = read(fd, ua, 6);
+              int num_times = 0;
+              while(num_times < 6){
+                res = read(fd, ua + num_times, 1);
+                if(res != -1){
+                  num_times++;
+                  res = num_times;
+                }
+                else{
+                  break;
+                }
+              }
               //if (res) printf("%s\n", ua);
               
               if(res == -1){
-                printf("Faild to read UA. Trying again.\n");
+                printf("Faild to read UA.\n"); //Trying again.\n");
               }
               else if(res != 6){
                 printf("UA doesn't have the correct length, It should be 6, it is %d.\n", res);
@@ -259,7 +270,11 @@ void llopen(int fd, flag flag){
                 }
               }
               
-            }            
+            }      
+            if(tries >= NUM_TRIES){
+              printf("Number of tries exceeded. Exiting.\n");
+              exit(0);
+            }      
             break;
         }
         case RECEIVER:
@@ -286,8 +301,17 @@ void llopen(int fd, flag flag){
             int n = 0;
             char str[255];
             
-
-            res = read(fd,str,6);   /* returns after 6 chars have been input */
+            int num_times = 0;
+            while(num_times < 6){
+              res = read(fd, str + num_times, 1);
+              if(res != -1){
+                num_times++;
+              }
+            }
+            for(int i = 0; i < 6; i++){
+              printf("%d", (int) str[i] & 0xFF);
+            }
+            //res = read(fd,str,6);   /* returns after 6 chars have been input */
             printf("Read string.\n");
             //receber e verificar o SET
             if (SETstateMachine(str) == FALSE){
