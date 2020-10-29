@@ -264,8 +264,7 @@ void llopen(int fd, flag flag){
         }
         case RECEIVER:
             newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-            newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
-
+            newtio.c_cc[VMIN]     = 1;
 
 
           /* 
@@ -399,20 +398,23 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   if(bcc2 == (char) FLAG){
     sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG1);
     j++;
-    sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG2);
+    //sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG2);
+    result[4 + (real_size) + j] =  (char) STUFFLAG2;
   }else if(bcc2 == (char) REPLACETRAMA2){
     sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D1);
     j++;
-    sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D2);
+    //sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D2);
+    result[4 + (real_size) + j] =  (char) STUF7D2;
   }
   else{    
-    sprintf(result + 4 + (real_size) + j, "%c", (char) bcc2); 
+    //sprintf(result + 4 + (real_size) + j, "%c", (char) bcc2); 
+    result[4 + (real_size) + j] = (char) bcc2;
   }
   //printf("bcc: %c", *(result + 4 + (real_size) + j));
   result[5 + (real_size) + j] = (char) FLAG;
   //sprintf(result + 5 + (real_size) + j, "%c", (char) FLAG);
   (*size) += 6 + j;
-  real_size = *size;
+  real_size = (*size);
   //Print final message
   /*for(int i = 0; i < (*size) + j; i++){
     write(STDOUT_FILENO, result + i, 1);
@@ -420,10 +422,11 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
   //write(STDOUT_FILENO, result, 6 + (real_size) + j);
   printf("Size: %d\n", real_size);
   memcpy(message, result, (real_size));
-  return; //result;
+  
 }
 
 int destuffing(int isOdd, char * message, int * size){
+  printf("message[0] - before: %d\n", (int) message[0]);
   printf("Beggining destuffing.\n");
   char resu[CHUNK_SIZE + 5] = "";
   /*if(message[0] != (char) FLAG){
@@ -447,10 +450,14 @@ int destuffing(int isOdd, char * message, int * size){
   printf("%d\n", message[7]);
   printf("%d\n", message[8]);
   printf("Size of result: %lu\n", sizeof(resu));
+  int real_size = (*size);
+  printf("Last byte: %d\n", (int) message[(*size)-3]);
 
   int endchars; //Última carater da trama
   if(message[(*size) - 2] == (char) STUF7D2  || message[(*size) - 2] == (char) STUFFLAG2){
-    endchars = (*size) - 3;
+    endchars = (*size) - 2;
+    printf("bcc with stuffing.\n");
+    real_size--;
   }
   else{
     endchars = (*size) - 2;
@@ -461,33 +468,39 @@ int destuffing(int isOdd, char * message, int * size){
   printf("Went past first part.\n");
 
   for(int i = 4; i < endchars; i++){
+    //printf("Size before: %d\n", real_size);
     if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
-      printf("first if.\n");
-        bcc2 = bcc2 ^ message[i + j];
+      printf("first if, i = %d\n", i-4);
+      bcc2 = bcc2 ^ message[i + j];
       if(message[i + 1 + j] == (char) STUFFLAG2){
       printf("second if.\n");
-        sprintf(resu + i - 4, "%c", FLAG);
+        //sprintf(resu + i - 4, "%c",(char) FLAG);
+        resu[i-4] = (char) FLAG;
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
       printf("third if.\n");
-        sprintf(resu + i - 4, "%c", REPLACETRAMA2);
+        //sprintf(resu + i - 4, "%c", (char) REPLACETRAMA2);
+        resu[i-4] = (char) REPLACETRAMA2;
       }
       else{
       printf("else.\n");
-        return 1;
+        //return 1;
       }
       j++;
     }
     else{
-      printf("normal cases.\n");
-      sprintf(resu + i - 4, "%c", message[i + j]);
+      //printf("normal cases.\n");
+      //sprintf(resu + i - 4, "%c", message[i + j]);
+      resu[i-4] = message[i + j];
     }
   }
+  
   (*size) -= j + 4 + 2;
   printf("reached memcpy.\n");
   printf("%d\n", endchars);
-  printf("%d\n", (*size));
-  memcpy(message, resu, (*size));
+  printf("size: %d\n",real_size);
+  memcpy(message, resu, real_size);
+  printf("message[0] - after: %d\n", (int) message[0]);
   //printf("Destuffing: %d", resu[0]);
   if(endchars == (*size) - 3){
     return 0;
@@ -655,9 +668,9 @@ int llwrite(int fd, char * buffer, int length){
       printf("Reading response!\n");
       if (readResponse(response) == ACK){
         alarm(0); //clear alarms
-        odd = (odd + 1) % 2;
-        ll.sequenceNumber++;
-        ll.sequenceNumber %= 2;
+        //odd = (odd + 1) % 2;
+        //ll.sequenceNumber++;
+        //ll.sequenceNumber %= 2;
         break;
       }
       else{
@@ -684,13 +697,15 @@ void llread(int fd, char * buffer){
     printf("Verify %d\n", verify);
       switch(verify){
         case ACK:
-          buildRresponse(response, &current_N, ACK);
-          destuffing(odd, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
+          buildRresponse(response, &ll.sequenceNumber, ACK);
+          printf("Frame length: %d\n", frame_length);
+          destuffing(ll.sequenceNumber, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
           //printf("Frame length: %d\n", frame_length);
           printf("C\n");
           break;
         case NACK:
-          buildRresponse(response, &current_N, NACK);
+          printf("NACK read.\n");
+          buildRresponse(response, &ll.sequenceNumber, NACK);
           break;
         case DISCONNECT:
           printf("Case disconnect.\n");
@@ -766,8 +781,8 @@ void buildRresponse(char* buffer, int *N_r, int success){
   int bcc = (int) A_SEND ^ (int) control_byte;
   sprintf((buffer + 2), "%c", (unsigned char)control_byte);
   sprintf((buffer + 3), "%c", (char) bcc);
-  sprintf((buffer + 4), "%c", FLAG);
-  sprintf((buffer + 5), "%c", '\0');
+  //sprintf((buffer + 4), "%c", FLAG);
+  buffer[4] = (char) FLAG;
 }
 
 

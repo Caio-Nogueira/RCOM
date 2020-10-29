@@ -51,7 +51,7 @@
 #define STUF7D2 0x5D
 
 #define DISC 0x0B
-#define CHUNK_SIZE 500
+#define CHUNK_SIZE 65536
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 

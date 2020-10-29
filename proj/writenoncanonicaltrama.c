@@ -41,21 +41,12 @@ int main(int argc, char** argv)
     }
     
     llopen(fd, TRANSMITTER);
-    sendControlPacket(CONTROL_START, "pinguim.gif", fd);
-    sendDataPackets(fd, "pinguim.gif");
+    sendControlPacket(CONTROL_START, "casa.jpg", fd);
+    sendDataPackets(fd, "casa.jpg");
     printf("BCSAC\n");
-    //sendControlPacket(CONTROL_END, "pinguim.gif", fd);
-
-    
-    /*int i = 0;
-    while(i < 5){
-    llwrite(fd, message, size);
-    i++;
-    }*/
-
 
     llclose(fd);
 
-    close(fd);
+    //close(fd);
     return 0;
 }
