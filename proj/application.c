@@ -224,6 +224,7 @@ void sendDataPackets(int fd, char* filename){
     int n_sequence = 0;    
     int bytesRead = 0;
     unsigned char buf[CHUNK_LEN+1];
+    printf("Reading packets now: %d\n", application.fileSize);
     while (bytesRead < application.fileSize){
         int bytes = read(application.fileDescriptor, &buf, number_bytes);
         bytesRead += bytes;
