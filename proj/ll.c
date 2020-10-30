@@ -895,9 +895,22 @@ int llclose(int fd){
       alarm(3);
       printf("Write successful\n");
     }
-    char response[6];
+    char response[6] = "";
     printf("Reading\n");
-    int res = read(fd, response, 5);
+    //int res = read(fd, response, 5);
+    int num_times = 0;
+    while(num_times < 5){
+      res = read(fd, response + num_times, 1);
+      if(res != -1){
+        num_times++;
+        res = num_times;
+        printf("byte: %d", *(response+num_times));
+      }
+      else{
+        break;
+      }
+    }
+
     for(int i = 0; i < 5; i++){
       printf("%x ", (int) response[i]);
     }
@@ -909,7 +922,7 @@ int llclose(int fd){
         printf("Disconnect has been recieved back. Sending UA now.\n");
         write(fd, UA, 5);
         printf("Success\n");
-        return 6;
+        return 5;
       }
     }
   }

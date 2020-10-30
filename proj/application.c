@@ -219,7 +219,7 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
 }
 
 void sendDataPackets(int fd, char* filename){
-    int number_bytes = 50;
+    int number_bytes = 500;
     char dataPacket[CHUNK_LEN+5];
     int n_sequence = 0;    
     int bytesRead = 0;
