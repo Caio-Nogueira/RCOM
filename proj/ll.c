@@ -10,6 +10,8 @@ int tries = 0;
 int res;
 int odd = 0;
 
+struct termios oldtio; //termios to save serial port settings
+
 linkLayer ll = {0xB38400, 0};
 
 char result[MAX_TRAMA_SIZE] = ""; //Contains the trama that will be sent next/is being sent
@@ -71,7 +73,7 @@ int verifyUA(char *UAresponse){//char str[]){
 
 
 void alarmHandler(){
-  printf("alarm was called. Cleaning input buffer\n");
+  printf("alarm was called.\n");
   tries++;
   flag_rewrite_SET = 1;
   flag_rewrite_frame = 1;
@@ -172,7 +174,7 @@ int ReadUA(char * ua, int numChars){
 
 
 void llopen(int fd, flag flag){
-    struct termios oldtio,newtio;
+    struct termios newtio;
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
@@ -198,7 +200,7 @@ void llopen(int fd, flag flag){
             action.sa_flags = 0;
             sigaction(SIGALRM, &action, NULL);
 
-            newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+            newtio.c_cc[VTIME]    = 10;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
@@ -280,7 +282,7 @@ void llopen(int fd, flag flag){
             break;
         }
         case RECEIVER:
-            newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+            newtio.c_cc[VTIME]    = 10;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 1;
 
 
@@ -340,7 +342,6 @@ void llopen(int fd, flag flag){
 
             break;
     }
-    ll.sequenceNumber = 0;
 }
 
 /*Writer function
@@ -545,7 +546,6 @@ int readInformationFrame(int fd, char* buffer, int* success){
   char byte;
   InformationFrameState state = START;
   printf("Start\n");
-  alarm(3);
   while (read(fd, &byte, 1) > 0){
     //fflush(stdout);
     //call destuffing function
@@ -567,7 +567,6 @@ int readInformationFrame(int fd, char* buffer, int* success){
       break;
     }
   }
-  alarm(0);
   printf("\n");
   *success = NACK;
   return 0;
@@ -674,33 +673,21 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
 Ver pags 14 e 15 do guião
 */
 int llwrite(int fd, char * buffer, int length){
-  //sint odd = 0;
+  int odd = 0;
   tries = 0;
   flag_rewrite_frame = TRUE;
-
-
-  printf("\n\n\n\n\n");
-  printf("Lengthas: %d\n", length);
-  buildwritearray(odd, buffer, (size_t *) &length);
   while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
+      printf("\n\n\n\n\n");
+      printf("Lengthas: %d\n", length);
+      buildwritearray(odd, buffer, (size_t *) &length);
       printf("Lengthaw: %d\n", length);
       write(fd, buffer, length);
       alarm(3);
     }
     char response[6];
-    
-    int num_times = 0;
-    while(num_times < 6){
-      res = read(fd, response + num_times, 1);
-      if(res != -1){
-        num_times++;
-        res = num_times;
-      }
-    }
-    //fflush((FILE *) (&length));
-    //int res = read(fd, response, 6);
+    int res = read(fd, response, 6);
     if (res == -1){
       perror("fd");
       sleep(1);
@@ -710,15 +697,12 @@ int llwrite(int fd, char * buffer, int length){
       if (readResponse(response) == ACK){
         alarm(0); //clear alarms
         //odd = (odd + 1) % 2;
-        ll.sequenceNumber++;
-        ll.sequenceNumber %= 2;
+        //ll.sequenceNumber++;
+        //ll.sequenceNumber %= 2;
         break;
       }
       else{
         printf("Invalid response!\n");
-        alarm(0);
-        flag_rewrite_frame = 1;
-        break;
       }
     }
   }
@@ -744,8 +728,6 @@ void llread(int fd, char * buffer){
           buildRresponse(response, &ll.sequenceNumber, ACK);
           printf("Frame length: %d\n", frame_length);
           destuffing(ll.sequenceNumber, buffer, &frame_length); //TODO: Adicionar um case ao switch DUP com buildrespmas semonse de ACK 
-          ll.sequenceNumber++;
-          ll.sequenceNumber %= 2;
           //printf("Frame length: %d\n", frame_length);
           printf("C\n");
           break;
@@ -946,5 +928,11 @@ int llclose(int fd){
       }
     }
   }
+  if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+    perror("tcsetattr");
+    exit(-1);
+  }
+
+
   return -1;
 }
