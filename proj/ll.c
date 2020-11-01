@@ -75,7 +75,7 @@ void alarmHandler(){
   tries++;
   flag_rewrite_SET = 1;
   flag_rewrite_frame = 1;
-  printf("%d\n", tries);
+  printf("n_tries: %d\n", tries);
 }
 
 
@@ -198,7 +198,7 @@ void llopen(int fd, flag flag){
             action.sa_flags = 0;
             sigaction(SIGALRM, &action, NULL);
 
-            newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+            newtio.c_cc[VTIME]    = 10;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
@@ -280,8 +280,15 @@ void llopen(int fd, flag flag){
             break;
         }
         case RECEIVER:
-            newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+            newtio.c_cc[VTIME]    = 10;   /* inter-character timer unused */
             newtio.c_cc[VMIN]     = 1;
+
+
+            struct sigaction action;
+            memset(&action,0,sizeof action);
+            action.sa_handler = alarmHandler;
+            action.sa_flags = 0;
+            sigaction(SIGALRM, &action, NULL);
 
 
           /* 
@@ -674,7 +681,6 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
 Ver pags 14 e 15 do guião
 */
 int llwrite(int fd, char * buffer, int length){
-  //sint odd = 0;
   tries = 0;
   flag_rewrite_frame = TRUE;
 
@@ -692,7 +698,7 @@ int llwrite(int fd, char * buffer, int length){
     char response[6];
     
     int num_times = 0;
-    while(num_times < 6){
+    while(num_times < 5){
       res = read(fd, response + num_times, 1);
       if(res != -1){
         num_times++;
@@ -705,13 +711,13 @@ int llwrite(int fd, char * buffer, int length){
       perror("fd");
       sleep(1);
     }
-    else if (res == 6){
+    else if (res == 5){
       printf("Reading response!\n");
       if (readResponse(response) == ACK){
         alarm(0); //clear alarms
         //odd = (odd + 1) % 2;
-        ll.sequenceNumber++;
-        ll.sequenceNumber %= 2;
+        //ll.sequenceNumber++;
+        //ll.sequenceNumber %= 2;
         break;
       }
       else{
@@ -765,7 +771,7 @@ void llread(int fd, char * buffer){
           printf("Default case.\n");
           break;
       }
-      write(fd, response, 6);
+      write(fd, response, 5);
     }
   else if(frame_length == -1){
       char disc[6] = "";
