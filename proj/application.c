@@ -40,8 +40,30 @@ void createFile(char *filename){
     myfile = fopen(filename, "w+");
     application.file = myfile;
 }
+/*
+void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_message){
+    int file_size_3 = application.fileSize;
 
-void sendControlPacket(int controlCamp, char* filename, int fd){
+
+    //calculating the number of bytes of file name
+    int num_bytes = 1;
+    for(num_bytes; num_bytes < L1; num_bytes++){
+        file_size_3 /= 256;
+        if(file_size_3 == 0){
+            break;
+        }
+    }
+    file_size_3 = application.fileSize;
+
+    num_bytes += 2; //
+
+    
+
+
+
+}*/
+
+void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message){
     unsigned char controlPacket[MAX_CONTROL_SIZE + 5] = "";
     sprintf(controlPacket, "%c", (unsigned char) controlCamp);
     //printf("Sending packet control.\n");
@@ -218,15 +240,15 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
     return (frame[0] == (char) CONTROL_START || frame[0] == (char) CONTROL_END);
 }
 
-void sendDataPackets(int fd, char* filename){
-    int number_bytes = 65535;
+void sendDataPackets(int fd, char* filename, int num_bytes_message){
+    //int number_bytes = 65535;
     char dataPacket[CHUNK_LEN+5];
     int n_sequence = 0;    
     int bytesRead = 0;
     unsigned char buf[CHUNK_LEN+1];
     printf("Reading packets now: %d\n", application.fileSize);
     while (bytesRead < application.fileSize){
-        int bytes = read(application.fileDescriptor, &buf, number_bytes);
+        int bytes = read(application.fileDescriptor, &buf, num_bytes_message);
         bytesRead += bytes;
         dataPacket[0] = (char) 0x01;
         dataPacket[1] = (char) (n_sequence % 255);
@@ -247,7 +269,7 @@ void sendDataPackets(int fd, char* filename){
         n_sequence++;
         n_sequence %= 255;
     }
-    sendControlPacket(CONTROL_END, filename, fd);
+    sendControlPacket(CONTROL_END, filename, fd, num_bytes_message);
     printf("CCCC\n");
 }
 

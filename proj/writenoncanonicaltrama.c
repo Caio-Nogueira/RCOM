@@ -15,19 +15,41 @@ int UA_read = FALSE;
 int res, fd;
 
 //int flag_rewrite_SET = TRUE; //In the first input loop, dictates wether SET should be rewritten 
-
+void printInvalidArgumentMessage(){
+  printf("Usage: nserial /dev/tty/ttyS1 n\nn >= 11, n < 131085");
+}
 
 int main(int argc, char** argv)
 {
     int c;
 
+    int number_bytes_trama;
+
+    //Parse arguments
     if ( (argc < 2) || 
   	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
   	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
-
+    if(argc < 3){
+      printInvalidArgumentMessage();
+      exit(1);
+    }
+    else{
+      for(int i = 0; i < strlen(argv[2]); i++){
+        if(!isdigit(argv[2][i])){
+          printf("%s is not a number", argv[2]);
+          printInvalidArgumentMessage();
+          exit(1);
+        }
+      }
+      number_bytes_trama = atoi(argv[2]);
+      if(number_bytes_trama < 12 && number_bytes_trama > 131085){
+        printInvalidArgumentMessage();
+      }
+    }
+    int number_bytes_message = (number_bytes_trama - 10) / 2;
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -41,8 +63,8 @@ int main(int argc, char** argv)
     }
     
     llopen(fd, TRANSMITTER);
-    sendControlPacket(CONTROL_START, "casa.jpg", fd);
-    sendDataPackets(fd, "casa.jpg");
+    sendControlPacket(CONTROL_START, "casa.jpg", fd, number_bytes_message);
+    sendDataPackets(fd, "casa.jpg", number_bytes_message);
     printf("BCSAC\n");
 
     llclose(fd);

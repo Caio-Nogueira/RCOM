@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <math.h> //For pow(base, exponent);
+#include <ctype.h> //For isdigit for argument checking
 #include "ll.h"
 
 #define CONTROL_START 2
@@ -28,13 +29,13 @@ int min(const int a, const int b);
 
 void readFile(char *filename);
 
-void sendControlPacket(int controlCamp, char* filename, int fd);
+void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
 
 void readControlPacket(int fd, char* string);
 
 unsigned verifyControlPacket(char* frame);
 
-void sendDataPackets(int fd, char* filename);
+void sendDataPackets(int fd, char* filename, int num_bytes_message);
 
 int getDataLen(char* frame);
 
