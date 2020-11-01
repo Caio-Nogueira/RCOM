@@ -219,7 +219,7 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
 }
 
 void sendDataPackets(int fd, char* filename){
-    int number_bytes = 500;
+    int number_bytes = 65535;
     char dataPacket[CHUNK_LEN+5];
     int n_sequence = 0;    
     int bytesRead = 0;
@@ -232,15 +232,16 @@ void sendDataPackets(int fd, char* filename){
         dataPacket[1] = (char) (n_sequence % 255);
         int L2 = bytes / 256;
         int L1 = bytes % 256;
-        dataPacket[2] = (char) L2;
-        dataPacket[3] = (char) L1;
+        dataPacket[2] = (unsigned char) L2;
+        dataPacket[3] = (unsigned char) L1;
         for (int i = 0; i < bytes; i++){
             dataPacket[4 + i] = (char) buf[i];
             //printf("i: %d ; buf[i]: %d\n", bytesRead + i, buf[i]);
         }
         //printf("L2: %d ; L1: %d\n", dataPacket[2], dataPacket[3]);
-        int f_size = min(bytes + 4, application.fileSize);
+        int f_size = min(bytes + 4, application.fileSize + 4);
         f_size = min(f_size, 256 * L2 + L1 + 4);
+        printf("f_size %d: \n", f_size);
         int length = llwrite(fd, dataPacket, f_size);        
         printf("len: %d\n", length);
         n_sequence++;

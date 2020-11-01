@@ -552,7 +552,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
   char byte;
   InformationFrameState state = START;
   printf("Start\n");
-  alarm(3);
+  alarm(20);
   while (read(fd, &byte, 1) > 0){
     //fflush(stdout);
     //call destuffing function
@@ -693,9 +693,10 @@ int llwrite(int fd, char * buffer, int length){
       flag_rewrite_frame = 0;
       printf("Lengthaw: %d\n", length);
       write(fd, buffer, length);
-      alarm(3);
+      alarm(20);
     }
     char response[6];
+
     
     int num_times = 0;
     while(num_times < 5){
@@ -724,7 +725,7 @@ int llwrite(int fd, char * buffer, int length){
         printf("Invalid response!\n");
         alarm(0);
         flag_rewrite_frame = 1;
-        break;
+        //break;
       }
     }
   }
