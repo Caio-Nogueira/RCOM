@@ -40,13 +40,15 @@ void createFile(char *filename){
     myfile = fopen(filename, "w+");
     application.file = myfile;
 }
-/*
+
 void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_message){
     int file_size_3 = application.fileSize;
 
 
     //calculating the number of bytes of file name
     int num_bytes = 1;
+
+    int L1 = sizeof(application.fileSize);
     for(num_bytes; num_bytes < L1; num_bytes++){
         file_size_3 /= 256;
         if(file_size_3 == 0){
@@ -55,16 +57,30 @@ void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_messa
     }
     file_size_3 = application.fileSize;
 
-    num_bytes += 2; //
-
+    num_bytes += 3; //First part of control packet
+    num_bytes += 2; //Second part of control packet
+    num_bytes += strlen(filename);
     
 
+    if(num_bytes_message >= num_bytes){
+        sendControlPacket(controlCamp, filename, fd, num_bytes);
+    }
+    else{
 
+        printf(">:[");
+        exit(0);
+    }
 
-}*/
+}
 
 void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message){
-    unsigned char controlPacket[MAX_CONTROL_SIZE + 5] = "";
+    unsigned char *controlPacket;//[MAX_CONTROL_SIZE + 5] = "";
+    if(num_bytes_message > MAX_CONTROL_SIZE){
+        printf("Message name is unreasonably long.");
+        fflush(stdout);
+        exit(0);
+    }
+    controlPacket = (unsigned char *) malloc(num_bytes_message + 5);
     sprintf(controlPacket, "%c", (unsigned char) controlCamp);
     //printf("Sending packet control.\n");
     readFile(filename);
@@ -242,7 +258,8 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
 
 void sendDataPackets(int fd, char* filename, int num_bytes_message){
     //int number_bytes = 65535;
-    char dataPacket[CHUNK_LEN+5];
+    char *dataPacket;//[CHUNK_LEN+5];
+    dataPacket = (char *) malloc(num_bytes_message + 5);
     int n_sequence = 0;    
     int bytesRead = 0;
     unsigned char buf[CHUNK_LEN+1];

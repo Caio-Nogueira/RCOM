@@ -16,7 +16,7 @@ int res, fd;
 
 //int flag_rewrite_SET = TRUE; //In the first input loop, dictates wether SET should be rewritten 
 void printInvalidArgumentMessage(){
-  printf("Usage: nserial /dev/tty/ttyS1 n\nn >= 11, n < 131085");
+  printf("Usage: nserial /dev/tty/ttyS1 n\nn >= 11, n <= 131082");
 }
 
 int main(int argc, char** argv)
@@ -63,7 +63,8 @@ int main(int argc, char** argv)
     }
     
     llopen(fd, TRANSMITTER);
-    sendControlPacket(CONTROL_START, "casa.jpg", fd, number_bytes_message);
+    printf("%d\n", number_bytes_message);
+    sendCtrlPacket(CONTROL_START, "casa.jpg", fd, number_bytes_message);
     sendDataPackets(fd, "casa.jpg", number_bytes_message);
     printf("BCSAC\n");
 

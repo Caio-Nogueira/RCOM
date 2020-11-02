@@ -9,7 +9,7 @@
 #define CONTROL_END 3
 #define T_FILE_SIZE 0
 #define T_FILE_NAME 1
-#define MAX_CONTROL_SIZE 1024
+#define MAX_CONTROL_SIZE 65536
 #define CHUNK_LEN 65536
 
 
@@ -28,6 +28,8 @@ int readBytes(char * bytes, int num_bytes, int num_members, FILE * file);
 int min(const int a, const int b);
 
 void readFile(char *filename);
+
+void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
 
 void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
 
