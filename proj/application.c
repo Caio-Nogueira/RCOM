@@ -293,7 +293,7 @@ void sendDataPackets(int fd, char* filename, int num_bytes_message){
 void readPackets(int fd, char* filename){
     printf("Start of readPackets\n");
     char buf[MAX_TRAMA_SIZE];
-    unsigned int current = -1;
+    int current = -1;
     int total = 0;
     while(1){
         llread(fd, buf);
@@ -301,11 +301,14 @@ void readPackets(int fd, char* filename){
         if (buf[0] == (char) 0x01) {
             //receive data packet
             //if ((unsigned int) buf[1] == current) continue;
-            //current = (unsigned int) buf[1];
-
+            int last = current;
+            current = (int) buf[1];
+            if (current <= last && last != 255) continue;
+            
+            printf("Current N: %d\n", current);
             int len = getDataLen(buf);
             total += len;
-            printf("Gets through getDataLen\n");
+            printf("Gets through getDataLen: len = %d\n\n", len);
             fwrite(buf+4, 1, len, application.file);
             printf("Total: %d\n\n\n\n\n\n\n", total);
             //fflush(fd);

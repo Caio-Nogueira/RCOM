@@ -226,7 +226,6 @@ void llopen(int fd, flag flag){
 
             while(tries < NUM_TRIES){
               if(flag_rewrite_SET){
-              //printf("Before write.\n");
                 flag_rewrite_SET = 0;
 
 
@@ -463,22 +462,6 @@ int destuffing(int isOdd, char * message, int * size){
   printf("message[0] - before: %d\n", (int) message[0]);
   printf("Beggining destuffing.\n");
   char resu[CHUNK_SIZE + 5] = "";
-  /*if(message[0] != (char) FLAG){
-    return 1;
-  }
-  if(message[1] != (char) A_SEND){
-    return 1;
-  }
-  if(message[2] != (char) (BASEIC | ((odd) * EVENIC))){
-    return 1;
-  }
-  if(message[3] != (char) ((C_SET | ((odd) * EVENIC) ^ A_SEND))){
-    return 1;
-  }
-
-  if(message[(*size) - 1] != (char) FLAG){
-    return 1;
-  }*/
   printf("destuffing conditions over.\n");
   printf("Size of message: %lu\n", sizeof(message));
   printf("%d\n", message[7]);
@@ -502,29 +485,23 @@ int destuffing(int isOdd, char * message, int * size){
   printf("Went past first part.\n");
 
   for(int i = 4; i < endchars; i++){
-    //printf("Size before: %d\n", real_size);
     if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
       printf("first if, i = %d\n", i-4);
       bcc2 = bcc2 ^ message[i + j];
       if(message[i + 1 + j] == (char) STUFFLAG2){
       printf("second if.\n");
-        //sprintf(resu + i - 4, "%c",(char) FLAG);
         resu[i-4] = (char) FLAG;
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
       printf("third if.\n");
-        //sprintf(resu + i - 4, "%c", (char) REPLACETRAMA2);
         resu[i-4] = (char) REPLACETRAMA2;
       }
       else{
       printf("else.\n");
-        //return 1;
       }
       j++;
     }
     else{
-      //printf("normal cases.\n");
-      //sprintf(resu + i - 4, "%c", message[i + j]);
       resu[i-4] = message[i + j];
     }
   }
@@ -535,7 +512,6 @@ int destuffing(int isOdd, char * message, int * size){
   printf("size: %d\n",real_size);
   memcpy(message, resu, real_size);
   printf("message[0] - after: %d\n", (int) message[0]);
-  //printf("Destuffing: %d", resu[0]);
   if(endchars == (*size) - 3){
     return 0;
   }
@@ -554,9 +530,6 @@ int readInformationFrame(int fd, char* buffer, int* success){
   printf("Start\n");
   alarm(20);
   while (read(fd, &byte, 1) > 0){
-    //fflush(stdout);
-    //call destuffing function
-    //printf("%c\n", byte);
     DataFrameStateMachine(&state, byte);
     buffer[len++] = byte;
     if (state == END) {
@@ -689,36 +662,35 @@ int llwrite(int fd, char * buffer, int length){
   printf("Lengthas: %d\n", length);
   buildwritearray(odd, buffer, (size_t *) &length);
   while (tries < NUM_TRIES){
+    printf("flag rewrite: %d\n", flag_rewrite_frame);
     if (flag_rewrite_frame){
+      alarm(20);
       flag_rewrite_frame = 0;
       printf("Lengthaw: %d\n", length);
       write(fd, buffer, length);
-      alarm(20);
+      
     }
-    char response[6];
+    char response[5];
 
     
     int num_times = 0;
-    while(num_times < 5){
+    while(num_times < 5 && !flag_rewrite_frame){
       res = read(fd, response + num_times, 1);
       if(res != -1){
         num_times++;
         res = num_times;
       }
+      //else break;
+      //else if (flag_rewrite_frame) break;
     }
-    //fflush((FILE *) (&length));
-    //int res = read(fd, response, 6);
+    
     if (res == -1){
       perror("fd");
-      sleep(1);
     }
     else if (res == 5){
       printf("Reading response!\n");
       if (readResponse(response) == ACK){
         alarm(0); //clear alarms
-        //odd = (odd + 1) % 2;
-        //ll.sequenceNumber++;
-        //ll.sequenceNumber %= 2;
         break;
       }
       else{
@@ -728,6 +700,10 @@ int llwrite(int fd, char * buffer, int length){
         //break;
       }
     }
+  }
+  if (tries == NUM_TRIES) {
+    printf("Serial port closed.\n");
+    exit(1);
   }
   return length;
 }
@@ -834,7 +810,6 @@ void buildRresponse(char* buffer, int *N_r, int success){
   int bcc = (int) A_SEND ^ (int) control_byte;
   sprintf((buffer + 2), "%c", (unsigned char)control_byte);
   sprintf((buffer + 3), "%c", (char) bcc);
-  //sprintf((buffer + 4), "%c", FLAG);
   buffer[4] = (char) FLAG;
 }
 
