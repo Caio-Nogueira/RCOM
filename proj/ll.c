@@ -1,5 +1,6 @@
 #include "ll.h"
 
+int llread_size_packet;
 
 volatile int STOP=FALSE;
 volatile int SUCESS=TRUE;

@@ -33,7 +33,7 @@ void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_messa
 
 void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
 
-void readControlPacket(int fd, char* string);
+int readControlPacket(int fd, char* string, int num_bytes_read, char * tempArr);
 
 unsigned verifyControlPacket(char* frame);
 

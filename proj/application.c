@@ -3,6 +3,8 @@
 applicationLayer application;
 //extern int fd;
 
+int llread_size_packet = 0;
+
 const char * get_extension(const char * name){//Thanks to stackoverflow.com/questions/5309471/getting-file-extensions-in-c
     const char *dot = strrchr(name, '.');
     if(!dot || dot == name) return "";
@@ -74,6 +76,7 @@ void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_messa
 }
 
 void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message){
+    
     unsigned char *controlPacket;//[MAX_CONTROL_SIZE + 5] = "";
     if(num_bytes_message > MAX_CONTROL_SIZE){
         printf("Message name is unreasonably long.");
@@ -82,12 +85,10 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     }
     controlPacket = (unsigned char *) malloc(num_bytes_message + 5);
     sprintf(controlPacket, "%c", (unsigned char) controlCamp);
-    //printf("Sending packet control.\n");
     readFile(filename);
     //send file size
     char T1 = (unsigned char) 0;
     int L1 = sizeof(application.fileSize);
-    printf("L1 = %d\n", L1);
     int file_size = application.fileSize;
 
     
@@ -100,13 +101,6 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     L2 = strlen(V2);
 
     sprintf((controlPacket + 1), "%c", T1);
-    //sprintf((controlPacket + 2), "%c", (unsigned char) L1);
-
-
-    //int file_size_2 = application.fileSize;
-    //printf("File size: %d", file_size_2);
-    //printf("File size 1st byte: %d", (file_size_2 & 0xFF));
-    //printf("File size 2nd byte: %d", ((file_size_2 / 256) & 0xFF));
 
     int file_size_3 = application.fileSize;
 
@@ -128,125 +122,102 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
 
     controlPacket[2] = (unsigned char) num_bytes;
     file_size_3 = application.fileSize;
-    //printf("Last byte: %d\n", file_size_3 & 0xFF);
     controlPacket[2 + num_bytes] = (unsigned char) file_size_3 & 0xFF;
 
-/*
-    unsigned char a = (unsigned char) file_size_2 & 0xFF;
-    controlPacket[2 + temp] = (unsigned char) file_size_2 & 0xFF;
-    printf("This should be 216 ->: %d", (int) a);
-    sprintf(controlPacket + 3, "%c", (unsigned char) file_size_2 & 0xFF);
-    int temp = 1;
-    for(temp = 1; temp < L1; temp++){
-        file_size_2 /= 256;
-        printf("Current file size: %d", file_size_2);
-        if(file_size_2 == 0){
-            break;
-        }
-        controlPacket[2 + temp] =  (unsigned char) file_size_2 & 0xFF;
-        //sprintf(controlPacket + 2 + temp, "%c", (unsigned char) file_size_2 & 0xFF);
-    }
-    printf("temp = %d\n", temp);*/
-
-
-    
-
-    /*
-    sprintf(controlPacket + 3, "%c", (unsigned char)(file_size >> 24) & 0xFF);
-    sprintf(controlPacket + 4, "%c", (unsigned char)(file_size >> 16) & 0xFF);
-    sprintf(controlPacket + 5, "%c", (unsigned char)(file_size >> 8) & 0xFF);
-    sprintf(controlPacket + 6, "%c", (unsigned char) file_size & 0xFF);
-    */
-
     sprintf(controlPacket + 3 + num_bytes, "%c", T2);
-    //sprintf(controlPacket + 4 + num_bytes, "%c", (unsigned char) L2);
+    //Adding filename's length in bytes to control packet
     controlPacket[4 + num_bytes] = (unsigned char) L2;
-    //strcat(controlPacket, V2);
     int j = 0;
+    //Adding filename to control packet
     for (int i = 0; i < L2; i++){
         controlPacket[5 + num_bytes + j] = filename[i];
-        //sprintf(controlPacket + 5 + num_bytes + j, "%c", filename[i]);
         j++;
     }
 
-    for(int l = 0; l < 5 + num_bytes + j; l++){
-        printf("%d ", (int) controlPacket[l]);   
+    printf("Message:");
+    for(int i = 0; i < 5 + num_bytes + j; i++){
+        printf("%d ", controlPacket[i]);
     }
-
-    //printf("size of packet: %d\n", 5+num_bytes+j);
-    int bytes_written = llwrite(fd, controlPacket, 5+num_bytes+j);
-    printf("bytes written: %d\n", bytes_written);
-    //llwrite(fd, controlPacket, 5+L1+L2);
-    printf("Packet control sent.\n");
-
-
+    printf("\n");
+    int bytes_written = 0;
+    int bytes_to_write;
+    char * arr;
+    arr = (char *) malloc(num_bytes_message);
+    while(bytes_written < 5 + num_bytes + j){
+        bytes_to_write = min(num_bytes_message, 5+num_bytes+j - bytes_written);
+        
+        memcpy(arr, controlPacket + bytes_written, bytes_to_write);
+        for(int i = 0; i < 7; i++){
+            printf("%d ", (int) arr[i]);
+        }
+        printf("\n");
+        printf("%d\n", bytes_to_write);
+        llwrite(fd, arr, bytes_to_write);//controlPacket + bytes_written, bytes_to_write);
+        bytes_written += bytes_to_write;
+    }
+    printf("\n");
 }
 
 
 
-void readControlPacket(int fd, char* string){ //  receiver port filedes
-    //char string[256];
-    //llread(fd, string);
-    
-    int sizeArg0 = (int) string[2];
-    int sizeArg1 = (int) string[2 + 2 + sizeArg0];
+int readControlPacket(int fd, char* string, int num_bytes_read, char * tempArr){ //  receiver port filedes
+    int num_bytes_size;
+    int num_bytes_filename;
+    int ready = 0;
 
-    printf("Size argument 0: %d\n", sizeArg0);
-    printf("Size argument 1: %d\n", sizeArg1);
-
-    for(int i = 0; i < sizeArg0 + sizeArg1 + 5; i++){
-        //printf("%d ", (unsigned int) string[i] & 0xFF);
+    /*printf("String: ");
+    for(int i = 0; i < 7; i++){
+        printf("%d ", (int) string[i]& 0xFF);
     }
 
-    int file_size = 0;
-    int a = 1;
-    for(int i = 0; i < sizeArg0; i++){
-        a *= 256;
-        file_size += (((unsigned int) string[2 + sizeArg0 - i]) & 0xFF) * a / 256;
+    printf("\nTemp array: ");
+    for(int i = 0; i < 7; i++){
+        printf("%d ", tempArr[i]& 0xFF);
     }
-
-    printf("File size: %d\n", file_size);
-
-    char name[256];
-    for(int i = 2 + 2 + sizeArg0 + 1; i < 2 + 2 + sizeArg0 + 1 + sizeArg1; i++){
-        sprintf(name - (2 + 2 + sizeArg0 + 1) + i, "%c",  string[i]);
+    printf("\n");*/
+    if(num_bytes_read != llread_size_packet){
+        memcpy(string + num_bytes_read - llread_size_packet, tempArr , llread_size_packet);
     }
-    printf("Filename: %s\n", name);
-/*
-    char str[256];
-    llread(fd, str);
-    char* buffer = str;//+4; //skip FLAG, A, C, and BCC1
-    write(STDOUT_FILENO, buffer, 50);
-    fflush(stdout);
-    int L1, L2;
-    char* filename;
-    char controlCamp = buffer[0];
-    if (buffer[1] == (char) 0x00){         //file_size
-        printf("\nReading file size\n");
+    printf("%d\n", num_bytes_read);
+        if(num_bytes_read >= 3){
+            num_bytes_size = string[2];
+            if(num_bytes_read >= 3 + num_bytes_size + 2){
+                num_bytes_filename = string[2 + num_bytes_size + 2];
+                //printf("%d %d %d\n", num_bytes_size, num_bytes_filename, 5 + num_bytes_size + num_bytes_filename);
+                for(int i = 0; i < 15; i++){
+                    printf("%d ", string[i]);
+                }
+                if(num_bytes_read == 3 + num_bytes_size + 2 + num_bytes_filename){
+                    ready = 1;
+                }
+                else if(num_bytes_read > 3 + num_bytes_size + 2 + num_bytes_filename){
+                    printf("Too many bytes (%d) read. Exiting now", num_bytes_read);
+                }
+            }
+        }/*
+    printf("Start\n");
+    for(int i = 0; i < num_bytes_read; i++){
+        printf("%d\n", (int) (string[i] & 0xFF));
+    }
+    printf("End\n\n");*/
+    if(ready){
+        int sizeArg0 = (int) string[2];
+        int sizeArg1 = (int) string[2 + 2 + sizeArg0];
 
-        L1 = (int) buffer[2];
-        //printf("L1: %d\n", L1);
-        char* V1 = malloc(L1*sizeof(char));
-        int j = 0;
-        for (int i = 3; i < 3+L1; i++){
-            V1[j++] = buffer[i];
+        int file_size = 0;
+        int a = 1;
+        for(int i = 0; i < sizeArg0; i++){
+            a *= 256;
+            file_size += (((unsigned int) string[2 + sizeArg0 - i]) & 0xFF) * a / 256;
         }
-    }
-    
-    //printf("\nT2: %d\n", (int) buffer[3+L1]);
-    if (buffer[3+L1] == (char) 0x01){      //file_name
-        printf("Reading file name\n");
-        L2 = (int) buffer[4+L1];
-        filename = malloc(L2*sizeof(char));
-        int j = 0;
-        for (int i = 5+L1; i < 5+L1+L2; i++){
-            filename[j++] = buffer[i];
-            printf("%c\n", buffer[i]);
-            
+
+        char name[256];
+        for(int i = 2 + 2 + sizeArg0 + 1; i < 2 + 2 + sizeArg0 + 1 + sizeArg1; i++){
+            sprintf(name - (2 + 2 + sizeArg0 + 1) + i, "%c",  string[i]);
         }
+        return 0;
     }
-    printf("Control packet read.\n");
-    //printf("%s\n", filename);*/
+    return 1;
 }
 
 
@@ -295,6 +266,11 @@ void readPackets(int fd, char* filename){
     char buf[MAX_TRAMA_SIZE];
     int current = -1;
     int total = 0;
+
+    char *temp;
+    int inicialized = 0;
+    int num_bytes_ctrl = 0;
+
     while(1){
         llread(fd, buf);
         printf("Buf char: %d", (int) buf[0]);
@@ -318,12 +294,38 @@ void readPackets(int fd, char* filename){
         }
         
         else if (buf[0] == 0x02) {
-            readControlPacket(fd, buf);
+            printf("Number of bytes in start control packet: %d\n", llread_size_packet);
+            if(!inicialized){
+                printf("AAAAAAAAAA\n");
+                temp = (char *) malloc(llread_size_packet * 2 + 13);
+            }
+            int read_result = 1;
+            while(read_result == 1){
+                num_bytes_ctrl += llread_size_packet;
+                for(int i = 0; i < 7; i++){
+                    printf("%d ", (int) temp[i]& 0xFF);
+                }
+                printf("Num bytes ctrl: %d\n", num_bytes_ctrl);
+                read_result = readControlPacket(fd, buf, num_bytes_ctrl, temp);
+                printf("%d\n", read_result);
+                if(read_result == 1){
+                    llread(fd, temp);
+                }
+            }
+            num_bytes_ctrl = 0;
             createFile(filename);
         }
 
         else if (buf[0] == 0x03) {
-            readControlPacket(fd, buf);
+            printf("Number of bytes in start control packet: %d\n", llread_size_packet);
+            num_bytes_ctrl += llread_size_packet;
+            int read_result = 1;
+            while(read_result == 1){
+                read_result = readControlPacket(fd, buf, num_bytes_ctrl, temp);
+                if(read_result == 1){
+                    llread(fd, temp);
+                }
+            }
             break;
         }
 
