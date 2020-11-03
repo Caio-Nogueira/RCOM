@@ -14,6 +14,12 @@ int main(int argc, char** argv)
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
+    char * filename;
+    if(argc >= 3){
+      filename = (char *) malloc(strlen(argv[2]) + 1);
+      memcpy(filename, argv[2], strlen(argv[2]));
+      //filename[strlen(argv[2]) + 1] = '\0';
+    }
 
 
   /*
@@ -27,7 +33,7 @@ int main(int argc, char** argv)
     char str[256];
 
     llopen(fd, RECEIVER);
-    readPackets(fd, "casa.jpg");
+    readPackets(fd, filename);
 
     //llread(fd, str);
     //readControlPacket(fd);

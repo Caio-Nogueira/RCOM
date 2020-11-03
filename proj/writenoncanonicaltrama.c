@@ -51,6 +51,19 @@ int main(int argc, char** argv)
       }
     }
     int number_bytes_message = (number_bytes_trama - 10) / 2;
+    
+    char * path;
+    if(argc < 4){
+      printInvalidArgumentMessage();
+    }
+    else{
+      /*
+      filename = (char *) malloc(strlen(argv[2]) + 1);
+      memcpy(filename, argv[2], strlen(argv[2]));
+      */
+      path = (char *) malloc(strlen(argv[3]) + 1);
+      sprintf(path, argv[3], strlen(argv[3]));
+    }
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -65,8 +78,10 @@ int main(int argc, char** argv)
     
     llopen(fd, TRANSMITTER);
     printf("%d\n", number_bytes_message);
-    sendCtrlPacket(CONTROL_START, "casa.jpg", fd, number_bytes_message);
-    sendDataPackets(fd, "casa.jpg", number_bytes_message);
+    printf("Path:  %s\n", argv[3]);
+    printf("Path:  %s\n", path);
+    sendControlPacket(CONTROL_START, path, fd, number_bytes_message);
+    sendDataPackets(fd, path, number_bytes_message);
     printf("BCSAC\n");
 
     llclose(fd);

@@ -482,22 +482,22 @@ int destuffing(int isOdd, char * message, int * size){
 
   int bcc2;
   int j = 0;
-  printf("Went past first part.\n");
+  //printf("Went past first part.\n");
 
   for(int i = 4; i < endchars; i++){
     if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
-      printf("first if, i = %d\n", i-4);
+      //printf("first if, i = %d\n", i-4);
       bcc2 = bcc2 ^ message[i + j];
       if(message[i + 1 + j] == (char) STUFFLAG2){
-      printf("second if.\n");
+      //printf("second if.\n");
         resu[i-4] = (char) FLAG;
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
-      printf("third if.\n");
+      //printf("third if.\n");
         resu[i-4] = (char) REPLACETRAMA2;
       }
       else{
-      printf("else.\n");
+      //printf("else.\n");
       }
       j++;
     }
