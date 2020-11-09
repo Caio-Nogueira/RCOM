@@ -37,6 +37,7 @@
 // A = A_SEND
 #define ACK 0
 #define NACK 1
+#define DUP -1
 
 #define BASEIC 0x00
 #define EVENIC 0x40
@@ -62,7 +63,7 @@ typedef struct{
     int baudrate;
 }linkLayer;
 
-void llopen(int fd, flag flag);
+void llopen(int fd, flag flag, long baud);
 
 
 int SETstateMachine(char* setmsg);
@@ -73,11 +74,11 @@ int destuffing(int odd, char * message, int * size);
 
 int llwrite(int fd, char * buffer, int length);
 
-int readInformationFrame(int fd, char* buffer, int* success);
+int readInformationFrame(int fd, char* buffer, int* success, int * duplicate);
 
-void DataFrameStateMachine(InformationFrameState *state, char byte);
+void DataFrameStateMachine(InformationFrameState *state, char byte, int * duplicate);
 
-void llread(int fd, char * buffer);
+int llread(int fd, char * buffer);
 
 void buildRresponse(char* buffer, int *N_r, int success);
 

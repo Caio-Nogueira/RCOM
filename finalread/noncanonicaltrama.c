@@ -1,25 +1,31 @@
 /*Non-Canonical Input Processing*/
 #include "application.h"
+#include <time.h>
 
 
 int main(int argc, char** argv)
 {
     int fd,c, res;
 
+    clock_t start, end;
+    double cpu_time_used;    
 
-    if ( (argc < 2) || 
+
+    if ( (argc < 3) || 
   	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
   	      (strcmp("/dev/ttyS11", argv[1])!=0) &&
           (strcmp("/dev/ttyS0", argv[1])!=0))) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
-    char * filename;
-    if(argc >= 3){
-      filename = (char *) malloc(strlen(argv[2]) + 1);
-      memcpy(filename, argv[2], strlen(argv[2]));
-      //filename[strlen(argv[2]) + 1] = '\0';
-    }
+
+    start = clock();
+
+    long baud = 0;
+
+    baud = strtol(argv[2],NULL, 16);
+
+    
 
 
   /*
@@ -32,8 +38,8 @@ int main(int argc, char** argv)
     if (fd <0) {perror(argv[1]); exit(-1); }
     char str[256];
 
-    llopen(fd, RECEIVER);
-    readPackets(fd, filename);
+    llopen(fd, RECEIVER, baud);
+    readPackets(fd, "dest/imagem.jpg");
 
     //llread(fd, str);
     //readControlPacket(fd);
@@ -84,5 +90,10 @@ int main(int argc, char** argv)
 
     //tcsetattr(fd,TCSANOW,&oldtio);
     llclose(fd);
+    end = clock();
+
+    cpu_time_used = ((double)(end-start)) / CLOCKS_PER_SEC;
+
+    printf("Seconds elapsed: %f\n", cpu_time_used*10);
     return 0;
 }
