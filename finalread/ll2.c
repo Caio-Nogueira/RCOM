@@ -9,6 +9,7 @@ int tries = 0;
 int res;
 int odd = 0;
 
+int llread_success = 0;
 
 linkLayer ll = {0xB38400, 0};
 
@@ -407,6 +408,7 @@ Adds trama to array to be used in writter
 void buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
   //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
   //size_t size = 8;
+  printf("A\n");
 
   int bcc2 = 0;
   int real_size = (int) *size;
@@ -483,6 +485,7 @@ void buildwritearray(int odd, char * message, size_t * size){//Aditional argumen
     }
   }*/
 
+  printf("Bcc2 before special check: %d\n", (unsigned char) bcc2);
 
   //printf("\n");
   //printf("bcc2: %d, flag, %d", (int) bcc2, FLAG);
@@ -622,7 +625,11 @@ int destuffing(int isOdd, char * message, int * size){
 		bcc2 = bcc2 ^  resu[i];
   }
 
-  
+  if((*size) == 500){
+  printf("Bcc1 recieved: %d\n", (unsigned char) bcc1_received);
+  printf("Bcc2 recieved: %d\n", (unsigned char) bcc2_received);
+  printf("Bcc2: %d\n", (unsigned char) bcc2);
+  }
   
   memcpy(message, resu, real_size);
 
@@ -630,46 +637,53 @@ int destuffing(int isOdd, char * message, int * size){
   for (int i = 0; i < (*size); i++){
 		bcc2 = bcc2 ^  message[i];
   }
-  
+
+  printf("bcc2 from read: %x\n", bcc2);
+  printf("bcc2 from read: %x\n", bcc1_received);
+  printf("bcc2 from read: %x\n", bcc2_received);
+ // printf("Endchars: %d\n", endchars);
+  if((*size) == 500){
+  printf("Endchars - 6: %d\n", endchars - 6);
+  printf("size - 3: %d\n", (*size) - 3);
+  }
   if(endchars - 6 == (*size) - 3){
     (*size)--;
     return 0;
   }
   else if((unsigned int) (bcc1_received & 0xff) == (unsigned int) (bcc2 & 0xff)){
+   // printf("destuffing sucessful.");
     return 0;
   }
 
   else if ((unsigned int) (bcc2_received & 0xff) == (unsigned int) (bcc2 & 0xff)){
+   // printf("destuffing sucessful.");
     return 0;
   }
 
-  printf("Destuffing failed: bcc_received: %d, real_bcc: %d\n", (unsigned int) (bcc1_received & 0xff),(unsigned int) (bcc2 & 0xff));
+ // printf("Destuffing failed: bcc_received: %d, real_bcc: %d\n", (unsigned int) (bcc1_received & 0xff),(unsigned int) (bcc2 & 0xff));
+ // printf("bcc2_alternative: %d\n", bcc2_received);
   return 1;
 }
 
-int readInformationFrame(int fd, char* buffer, int* success, int *duplicate){
+int readInformationFrame(int fd, char* buffer, int* success){
   //read I frame
   int len = 0;
   char byte;
   InformationFrameState state = START;
-  
+  printf("Start\n");
   alarm(20);
+
 
   
   while (read(fd, &byte, 1) > 0){
-    DataFrameStateMachine(&state, byte, duplicate);
+    DataFrameStateMachine(&state, byte);
     if(state == START){
       len = 0;
     }
     buffer[len++] = byte;
     if (state == END) {
       *success = ACK;
-      if(duplicate){
-        printf("ACK achieved!\n");
-      }
-      else{
-        printf("Duplicate packet recieved.\n");
-      }
+      printf("ACK achieved!\n");
       return len;
     }
     else if (state == DISCONNECT){
@@ -687,7 +701,7 @@ int readInformationFrame(int fd, char* buffer, int* success, int *duplicate){
 }
 
 
-void DataFrameStateMachine(InformationFrameState *state, char byte, int *duplicate){
+void DataFrameStateMachine(InformationFrameState *state, char byte){
   switch (*state)
   {
   
@@ -718,12 +732,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte, int *duplica
   
   case A_RCVD:
     //printf("A_RCVD\n");
-    if ((byte == EVENIC && ll.sequenceNumber == 1) || (byte == BASEIC && ll.sequenceNumber == 0)){
-      *state = C_RCVD;
-    }
-    else if(byte == EVENIC || byte == BASEIC){
-      printf("Duplicate packet found.\n");
-      (*duplicate) = TRUE;
+    if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
     else {
@@ -792,45 +801,96 @@ void DataFrameStateMachine(InformationFrameState *state, char byte, int *duplica
   }
 }
 
-
-/*Writer function
-Ver pags 14 e 15 do guião
-*/
 int llwrite(int fd, char * buffer, int length){
   tries = 0;
   flag_rewrite_frame = TRUE;
 
+
   buildwritearray(odd, buffer, (size_t *) &length);
-  //int temp = buffer[length - 2];
-  while (tries < NUM_TRIES && flag_rewrite_frame){
+  while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
-
-      //Uncomment and uncomment temp declaration to induce errors in certain bits
-      /*if(rand() % 15 == 0){
-        buffer[length - 2] = 3;
-      }
-      else{
-        buffer[length - 2] = temp;
-      }*/
-
-      printf("Writting to buffer now.");
       write(fd, buffer, length);
       alarm(20);
     }
-    printf("Reading.\n");
+    char response[5];
+	printf("Length: %d\n", length);
+
+    
+    int num_times = 0;
+    InformationFrameState state = START;
+    char cbyte;
+    while(state != END && !flag_rewrite_frame){
+      res = read(fd, &cbyte , 1);//+ num_times, 1);
+      /*if(res != -1){
+        num_times++;
+        res = num_times;
+      }*/
+      if (res < 0) continue;
+      readResponse(&state, cbyte, response);
+    }
+    /*char temp[6] = "";
+    int res2 = read(fd, temp, 6);
+    if(res2 != 0){
+        printf("Res2 != 0, temp[0] = %d", (unsigned char) temp[0]);
+    }
+    if (res == -1){
+      perror("fd");
+
+      //sleep(1);
+    }*/
+    if (state == END){
+      int result = ((response[2] == RR0 || response[2] == RR1) ? ACK : NACK);
+      if (result == ACK){
+        alarm(0); //clear alarms
+        printf("Success.\n");
+        //odd = (odd + 1) % 2;
+        ll.sequenceNumber++;
+        ll.sequenceNumber %= 2;
+        break;
+      }
+	  else{
+      	printf("NACK read. \n");
+      	//alarm(0);
+      	flag_rewrite_frame = 1;
+      	//break;
+      }
+
+    }
+
+    else{
+      printf("Invalid. \n");
+      //alarm(0);
+      flag_rewrite_frame = 1;
+      //break;
+    }
+  }
+  return length;
+}
+
+
+/*Writer function
+Ver pags 14 e 15 do guião
+*/
+/*
+int llwrite(int fd, char * buffer, int length){
+  tries = 0;
+  flag_rewrite_frame = TRUE;
+
+  //printf("sequence number: %x", odd);
+  buildwritearray(odd, buffer, (size_t *) &length);
+  while (tries < NUM_TRIES && flag_rewrite_frame){
+    if (flag_rewrite_frame){
+      flag_rewrite_frame = 0;
+      
+      write(fd, buffer, length);
+      alarm(20);
+    }
     char response[6];
 
     
     int num_times = 0;
-    /*while(num_times < 5 && !flag_rewrite_frame){
-      res = read(fd, response + num_times, 1);//+ num_times, 1);
-      printf("response i: %x\n", response[num_times]);
-      if(res != -1){
-        num_times++;
-        res = num_times;
-      }
-    }*/
+    
     char temp[6] = "";
     int res2 = read(fd, temp, 5);
     if(res2 != 0){
@@ -843,28 +903,24 @@ int llwrite(int fd, char * buffer, int length){
     }
     else if (res2 == 5){
       printf("Reading response!\n");
-      int response = readResponse(temp);
-      if (response == ACK ||response == DUP){
+      if (readResponse(temp) == ACK){
         alarm(0); //clear alarms
-        if(response == ACK){
-          printf("RR recieved.\n");
-        }
+        printf("Valid.\n");
         flag_rewrite_frame = 0;
         //odd = (odd + 1) % 2;
-        ll.sequenceNumber++;
-        ll.sequenceNumber %= 2;
+        //ll.sequenceNumber++;
+        //ll.sequenceNumber %= 2;
         break;
       }
       else{
-        printf("REJ or invalid response!\n");
+        printf("Invalid response!\n");
         alarm(0);
-        flag_rewrite_frame = 1;
         //break;
       }
     }
   }
   return length;
-}
+}*/
 
 
 /*Reader function
@@ -873,9 +929,8 @@ Ver pags 14 e 15 do guião
 */
 int llread(int fd, char * buffer){
   int verify = -1;
-  int duplicate = 1;
-  int frame_length = readInformationFrame(fd, buffer, &verify, &duplicate);
-
+  int frame_length = readInformationFrame(fd, buffer, &verify);
+    printf("llread\n");
   if(frame_length >= 0){
     //write(STDOUT_FILENO, buffer, frame_length);
     //fflush(stdout);
@@ -884,34 +939,31 @@ int llread(int fd, char * buffer){
     //printf("Verify %d\n", verify);
       switch(verify){
         case ACK:
-            if(!duplicate){
-                buildRresponse(response, &ll.sequenceNumber, ACK);
-                write(fd, response, 5);
-              return 0;
-            }
             if(destuffing(ll.sequenceNumber, buffer, &frame_length) == 0){
-                ll.sequenceNumber++;
-                ll.sequenceNumber %= 2;
                 buildRresponse(response, &ll.sequenceNumber, ACK);
                 break; 
             }
             else{
                 printf("Destuffing error\n");
+                llread_success = 1;
                 buildRresponse(response, &ll.sequenceNumber, NACK);
-                write(fd, response, 5);
                 return -1;
             break;
-            } 
+          } 
+          llread_success = 0;
+          ll.sequenceNumber++;
+          ll.sequenceNumber %= 2;
           //printf("Frame length: %d\n", frame_length);
           //printf("C\n");
           break;
         case NACK:
+          llread_success = 1;
           printf("NACK read.\n");
           buildRresponse(response, &ll.sequenceNumber, NACK);
-          write(fd, response, 5);
           return -1;
           break;
         case DISCONNECT:
+          llread_success = 0;
           printf("Case disconnect.\n");
           response[0] = FLAG;
           response[1] = A_Recieve;
@@ -926,7 +978,7 @@ int llread(int fd, char * buffer){
       write(fd, response, 5);
       return frame_length;
     }
-  /*else if(frame_length == -1){
+  else if(frame_length == -1){
       char disc[5];
       disc[0] = FLAG;
       disc[1] = A_Recieve;
@@ -948,7 +1000,7 @@ int llread(int fd, char * buffer){
         printf("Thing received isn't an UA. Exiting anyways, since the most likely option by far is errors in the UA sent\n");
       }
       exit(0);
-  }*/
+  }
   return 0;
 }
 
@@ -990,10 +1042,54 @@ void buildRresponse(char* buffer, int *N_r, int success){
   buffer[4] = (char) FLAG;
 }
 
+int readResponse(InformationFrameState* state, unsigned char byte, unsigned char* message){
+    switch (*state)
+    {
+        case START:
+            if (byte == FLAG) {*state = FLAG_RCVD; message[0] = byte;}
+            break;
 
+        case FLAG_RCVD:
+        if (byte == A_SEND){ *state = A_RCVD; message[1] = byte;}
+        else if(byte == FLAG){
+            message[0] = byte;
+            break;
+        }
+        else {
+            *state = START;
+        }
+        break;
+        case A_RCVD:
+            if (byte == RR0|| byte == RR1 || byte == REJ0 || byte == REJ1 || byte == C_UA || byte == DISC){*state = C_RCVD; message[2] = byte;}
+            else if(byte == FLAG){*state = FLAG_RCVD; message[0]=byte;}
+            else *state = START;
+            break;
+        case C_RCVD:
+            if (byte == (A_SEND ^ RR0) || byte == (A_SEND ^ RR1) || byte == (A_SEND ^ REJ0) || byte == (A_SEND ^ REJ1) || byte == (A_SEND ^ C_UA) || byte == (A_SEND ^ DISC)){
+                *state = BCC1_RCVD;
+                message[3] = byte;
+            }
+            else if(byte == FLAG){*state = FLAG_RCVD; message[0]=byte;}
+            else *state = START;
+            break;
+        case BCC1_RCVD:
+            if (byte == FLAG){*state = END; message[4]=byte;}
+            break;
+        case END:
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+/*
 int readResponse(char* buffer){
+printf("Bytes being recieved: \n");
+puts("");
   int success = -1;
-  for(int i = 0; i < 6; i++){
+  for(int i = 0; i < 5; i++){
+	printf("buffer[%d]: %x\n", i, buffer[i]);
+	puts("");
     switch(i){
       case 0:
         if(buffer[i] != FLAG){
@@ -1010,15 +1106,11 @@ int readResponse(char* buffer){
       case 2:
       {
         unsigned char control = (unsigned char) buffer[i];
-        if((control == 0x85 && ll.sequenceNumber == 0) || (control == 0x05 && ll.sequenceNumber == 1)){
+        if(control == 0x85 || control == 0x05){
           success = ACK;
         }
-        else if ((control == 0x81 & ll.sequenceNumber == 0) || (control == 0x01 & ll.sequenceNumber == 1)){
+        else if (control == 0x81 || control == 0x01){
           success = NACK;
-        }
-        else if(control == 0x85 || control == 0x05 || control == 0x81 || control == 0x01){
-          printf("Duplicate packet found.\n");
-          success = DUP;
         }
         else
         {
@@ -1045,7 +1137,7 @@ int readResponse(char* buffer){
     }
   }
   return success;
-}
+}*/
 
 int checkdisc(char * str){
   return(str[0] == (char) FLAG && str[1] == (char) A_Recieve && str[2] == (char) DISC && str[3] == (char) (A_Recieve ^ DISC) && str[4] == FLAG);

@@ -94,7 +94,14 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     L2 = strlen(V2);
 
     sprintf((controlPacket + 1), "%c", T1);
-    
+    //sprintf((controlPacket + 2), "%c", (unsigned char) L1);
+
+
+    //int file_size_2 = application.fileSize;
+    //printf("File size: %d", file_size_2);
+    //printf("File size 1st byte: %d", (file_size_2 & 0xFF));
+    //printf("File size 2nd byte: %d", ((file_size_2 / 256) & 0xFF));
+
     int file_size_3 = application.fileSize;
 
     int num_bytes = 1;
@@ -116,18 +123,55 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     controlPacket[2] = (unsigned char) num_bytes;
     file_size_3 = application.fileSize;
     //printf("Last byte: %d\n", file_size_3 & 0xFF);
-    controlPacket[2 + num_bytes] = (unsigned char) file_size_3 & 0xFF;    
+    controlPacket[2 + num_bytes] = (unsigned char) file_size_3 & 0xFF;
+
+/*
+    unsigned char a = (unsigned char) file_size_2 & 0xFF;
+    controlPacket[2 + temp] = (unsigned char) file_size_2 & 0xFF;
+    printf("This should be 216 ->: %d", (int) a);
+    sprintf(controlPacket + 3, "%c", (unsigned char) file_size_2 & 0xFF);
+    int temp = 1;
+    for(temp = 1; temp < L1; temp++){
+        file_size_2 /= 256;
+        printf("Current file size: %d", file_size_2);
+        if(file_size_2 == 0){
+            break;
+        }
+        controlPacket[2 + temp] =  (unsigned char) file_size_2 & 0xFF;
+        //sprintf(controlPacket + 2 + temp, "%c", (unsigned char) file_size_2 & 0xFF);
+    }
+    printf("temp = %d\n", temp);*/
+
+
+    
+
+    /*
+    sprintf(controlPacket + 3, "%c", (unsigned char)(file_size >> 24) & 0xFF);
+    sprintf(controlPacket + 4, "%c", (unsigned char)(file_size >> 16) & 0xFF);
+    sprintf(controlPacket + 5, "%c", (unsigned char)(file_size >> 8) & 0xFF);
+    sprintf(controlPacket + 6, "%c", (unsigned char) file_size & 0xFF);
+    */
 
     sprintf(controlPacket + 3 + num_bytes, "%c", T2);
+    //sprintf(controlPacket + 4 + num_bytes, "%c", (unsigned char) L2);
     controlPacket[4 + num_bytes] = (unsigned char) L2;
+    //strcat(controlPacket, V2);
     int j = 0;
     for (int i = 0; i < L2; i++){
         controlPacket[5 + num_bytes + j] = filename[i];
+        //sprintf(controlPacket + 5 + num_bytes + j, "%c", filename[i]);
         j++;
     }
 
-    int bytes_written = llwrite(fd, controlPacket, 5+num_bytes+j);
+    for(int l = 0; l < 5 + num_bytes + j; l++){
+        printf("%d ", (int) controlPacket[l]);   
+    }
 
+    //printf("size of packet: %d\n", 5+num_bytes+j);
+    int bytes_written = llwrite(fd, controlPacket, 5+num_bytes+j);
+    printf("bytes written: %d\n", bytes_written);
+    //llwrite(fd, controlPacket, 5+L1+L2);
+    printf("Packet control sent.\n");
 
 
 }
@@ -207,12 +251,15 @@ unsigned verifyControlPacket(char* frame){ //verifies if the current frame conta
 }
 
 void sendDataPackets(int fd, char* filename, int num_bytes_message){
+    //int number_bytes = 65535;
     char dataPacket[CHUNK_LEN+5];
+    //dataPacket = (char *) malloc(num_bytes_message + 5);
     int n_sequence = 0;    
     int bytesRead = 0;
 
     int length = 1;
     unsigned char buf[CHUNK_LEN+1];
+    printf("Reading packets now: %d\n", application.fileSize);
     while (bytesRead < application.fileSize){
         int bytes = read(application.fileDescriptor, &buf, num_bytes_message);
         bytesRead += bytes;

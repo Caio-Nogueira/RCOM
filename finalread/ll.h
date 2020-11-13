@@ -37,7 +37,6 @@
 // A = A_SEND
 #define ACK 0
 #define NACK 1
-#define DUP -1
 
 #define BASEIC 0x00
 #define EVENIC 0x40
@@ -53,6 +52,13 @@
 
 #define DISC 0x0B
 #define CHUNK_SIZE 65536
+
+
+#define RR0 0x05
+#define RR1 0x85
+#define REJ0 0X01
+#define REJ1 0X81
+
 
 typedef enum {TRANSMITTER, RECEIVER} flag;
 
@@ -74,15 +80,15 @@ int destuffing(int odd, char * message, int * size);
 
 int llwrite(int fd, char * buffer, int length);
 
-int readInformationFrame(int fd, char* buffer, int* success, int * duplicate);
+int readInformationFrame(int fd, char* buffer, int* success);
 
-void DataFrameStateMachine(InformationFrameState *state, char byte, int * duplicate);
+void DataFrameStateMachine(InformationFrameState *state, char byte);
 
 int llread(int fd, char * buffer);
 
 void buildRresponse(char* buffer, int *N_r, int success);
 
-int readResponse(char* buffer);
+int readResponse(InformationFrameState* state, unsigned char byte, unsigned char* message);
 
 int checkdisc(char * str);
 
