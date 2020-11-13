@@ -29,8 +29,6 @@ int min(const int a, const int b);
 
 void readFile(char *filename);
 
-void sendCtrlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
-
 void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_message);
 
 void readControlPacket(int fd, char* string);

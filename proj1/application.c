@@ -38,7 +38,7 @@ void readFile(char *filename){
 //create file
 void createFile(char *filename){
     FILE * myfile;
-    myfile = fopen(filename, "w+");
+    myfile = fopen(application.file_name, "w+");
     application.file = myfile;
 }
 
@@ -205,6 +205,8 @@ void readControlPacket(int fd, char* string){ //  receiver port filedes
     for(int i = 2 + 2 + sizeArg0 + 1; i < 2 + 2 + sizeArg0 + 1 + sizeArg1; i++){
         sprintf(name - (2 + 2 + sizeArg0 + 1) + i, "%c",  string[i]);
     }
+
+    strcpy(application.file_name, name);
     //printf("Filename: %s\n", name);
 /*
     char str[256];

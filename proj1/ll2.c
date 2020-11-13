@@ -868,61 +868,6 @@ int llwrite(int fd, char * buffer, int length){
   return length;
 }
 
-
-/*Writer function
-Ver pags 14 e 15 do guião
-*/
-/*
-int llwrite(int fd, char * buffer, int length){
-  tries = 0;
-  flag_rewrite_frame = TRUE;
-
-  //printf("sequence number: %x", odd);
-  buildwritearray(odd, buffer, (size_t *) &length);
-  while (tries < NUM_TRIES && flag_rewrite_frame){
-    if (flag_rewrite_frame){
-      flag_rewrite_frame = 0;
-      
-      write(fd, buffer, length);
-      alarm(20);
-    }
-    char response[6];
-
-    
-    int num_times = 0;
-    
-    char temp[6] = "";
-    int res2 = read(fd, temp, 5);
-    if(res2 != 0){
-        printf("Res2 != 0, temp[0] = %d", (unsigned char) temp[0]);
-    }
-    if (res2 == -1){
-      perror("fd");
-
-      sleep(1);
-    }
-    else if (res2 == 5){
-      printf("Reading response!\n");
-      if (readResponse(temp) == ACK){
-        alarm(0); //clear alarms
-        printf("Valid.\n");
-        flag_rewrite_frame = 0;
-        //odd = (odd + 1) % 2;
-        //ll.sequenceNumber++;
-        //ll.sequenceNumber %= 2;
-        break;
-      }
-      else{
-        printf("Invalid response!\n");
-        alarm(0);
-        //break;
-      }
-    }
-  }
-  return length;
-}*/
-
-
 /*Reader function
 Reads the buffer, (eventually removes stuffing), interprets the content and sends back trama de supervisão
 Ver pags 14 e 15 do guião
@@ -1082,62 +1027,6 @@ int readResponse(InformationFrameState* state, unsigned char byte, unsigned char
     }
     return 0;
 }
-/*
-int readResponse(char* buffer){
-printf("Bytes being recieved: \n");
-puts("");
-  int success = -1;
-  for(int i = 0; i < 5; i++){
-	printf("buffer[%d]: %x\n", i, buffer[i]);
-	puts("");
-    switch(i){
-      case 0:
-        if(buffer[i] != FLAG){
-          printf("FLAG error!\n");
-          return NACK;
-        }
-        break;
-      case 1:
-        if(buffer[i] != A_SEND){
-          printf("A_SEND error!\n");
-          return 2;
-        }
-        break;
-      case 2:
-      {
-        unsigned char control = (unsigned char) buffer[i];
-        if(control == 0x85 || control == 0x05){
-          success = ACK;
-        }
-        else if (control == 0x81 || control == 0x01){
-          success = NACK;
-        }
-        else
-        {
-          printf("CONTROL error!\n");
-          return 2;
-        }
-        
-        break;
-      }
-      case 3:
-      {
-        char bcc;
-        bcc = buffer[1] ^ buffer[2];
-        if(buffer[i] != (char) bcc){
-          printf("Wrong bcc.\n");
-          return 3;
-        }
-        break;
-      }
-      case 4:
-        if(buffer[i] != FLAG){
-          return 4;
-        }
-    }
-  }
-  return success;
-}*/
 
 int checkdisc(char * str){
   return(str[0] == (char) FLAG && str[1] == (char) A_Recieve && str[2] == (char) DISC && str[3] == (char) (A_Recieve ^ DISC) && str[4] == FLAG);

@@ -69,7 +69,7 @@ int main(int argc, char** argv)
     
     llopen(fd, TRANSMITTER, baud);
     printf("%d\n", number_bytes_message);
-    sendCtrlPacket(CONTROL_START, argv[4], fd, number_bytes_message);
+    sendControlPacket(CONTROL_START, argv[4], fd, number_bytes_message);
     sendDataPackets(fd, argv[4], number_bytes_message);
     printf("BCSAC\n");
 
