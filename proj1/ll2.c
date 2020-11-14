@@ -66,8 +66,6 @@ speed_t checkBaudrate(long br){
 }
 
 int verifyUA(char *UAresponse){//char str[]){
-    printf("Attempt\n");
-  //char strUA[255];
   int n = 0;
   int sucess = FALSE;
 
@@ -82,30 +80,25 @@ int verifyUA(char *UAresponse){//char str[]){
           if(UAresponse[n] != (char) (A_SEND)){
             sucess = FALSE;
           }
-          //printf("1\n");
         }
         else if(n == 2){
           if(UAresponse[n] != ((char) (C_SET))){
             sucess = FALSE;
           }
-          //printf("2\n");
         }
         else if(n == 3){
           if(UAresponse[n] != (char) (BCC1)){
             sucess = FALSE;
-          } 
-          //printf("3\n");
+          }
         }
         else if(n == 4){
           if(UAresponse[n] != (char) (FLAG)){
             sucess = FALSE;
           }
-          //printf("4\n");
         }
         else if(n == 5){
             sucess = TRUE;
             STOP = TRUE;
-            //printf("5\n");
         }
       }
       else if(n == 5){
@@ -113,7 +106,6 @@ int verifyUA(char *UAresponse){//char str[]){
         printf("Failure.");
         exit(0);
       }
-      //printf("%c\n", str[n]);
       n++;
     }
     printf("Sucess\n");
@@ -290,7 +282,6 @@ void llopen(int fd, flag flag, long baud){
                   exit(0);
                 }
               }
-              //res = read(fd, ua, 6);
               int num_times = 0;
               while(num_times < 5){
                 res = read(fd, ua + num_times, 1);
@@ -303,10 +294,9 @@ void llopen(int fd, flag flag, long baud){
                   break;
                 }
               }
-              //if (res) printf("%s\n", ua);
               
               if(res == -1){
-                printf("Faild to read UA.\n"); //Trying again.\n");
+                printf("Faild to read UA.\n");
               }
               else if(res != 5){
                 printf("UA doesn't have the correct length, It should be 6, it is %d.\n", res);
@@ -315,7 +305,6 @@ void llopen(int fd, flag flag, long baud){
                 if(ReadUA(ua, res) != res){
                   printf("Error when receiving UA. The program will not reset to sending SET.\n");
                   printf("State machine not implemented yet. Exiting instead\n");
-                  //exit(0);
                 }
                 else{
                   alarm(0); //Clear every alarm
