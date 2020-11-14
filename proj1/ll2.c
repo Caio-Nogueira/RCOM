@@ -278,7 +278,6 @@ void llopen(int fd, flag flag, long baud){
 
             while(tries < NUM_TRIES){
               if(flag_rewrite_SET){
-              //printf("Before write.\n");
                 flag_rewrite_SET = 0;
 
 
@@ -405,117 +404,54 @@ void llopen(int fd, flag flag, long baud){
 /*Writer function
 Adds trama to array to be used in writter
 */
-void buildwritearray(int odd, char * message, size_t * size){//Aditional arguments will need to be char * original_message, int size_of_original_message
-  //char message[121] = "123\0a456"; //This shouldn't be the ,maximum size of the final message
-  //size_t size = 8;
-  printf("A\n");
-
+void buildwritearray(int odd, char * message, size_t * size){
   int bcc2 = 0;
   int real_size = (int) *size;
   for(int i = 0; i < real_size; i++){
     bcc2 = bcc2 ^ message[i];
   }
-  //printf("real size: %d\n", real_size);
   sprintf(result, "%c", (unsigned char) FLAG);
   sprintf(result + 1, "%c", (unsigned char) A_SEND);
   char current_C = (char) (C_SET | ((ll.sequenceNumber) * EVENIC));
   sprintf(result + 2, "%c", current_C ^ A_SEND);
   sprintf(result + 3, "%c", (char) (A_SEND | current_C));
-  //sprintf(result + 4, "%s", message); //Check if this works with '\0' later
-  //sprintf(result + 4 + size, "%c", );
 
   int j = 0;
   for(int i = 0; i < real_size; i++){
-    /*if(message[i] == '\0'){
-      write(STDOUT_FILENO, "A", 1);
-    }
-    else{
-    write(STDOUT_FILENO, message + i, 1);
-    }*/
-    //write(STDOUT_FILENO, message + i, 1);
-    //printf("Message %d: %d\n", i, (int) message[i]);
-    //printf("Result 4 + i + j: %d\n", (int) result[4 + i + j]);
     if(message[i] == (char) FLAG){      
-      //printf("C\n");
       result[4 + i + j] = (char) STUFFLAG1;
       
-      //sprintf(result + 4 + i + j, "%c", (char) STUFFLAG1);
-      //bcc2 = bcc2 ^ message[i];//result[ 4 + i + j];
       j++;
       
       result[4 + i + j] = (char) STUFFLAG2;
-      //sprintf(result + 4 + i + j, "%c", (char) STUFFLAG2);
-      //bcc2 = bcc2 ^ result[ 4 + i + j];
     }else if(message[i] == (char) REPLACETRAMA2){
-      //printf("B\n");
-      //sprintf(result + 4 + i + j, "%c", (char) STUF7D1);
-      result[4 + i + j] = (char) STUF7D1;
-      //bcc2 = bcc2 ^ message[i];//result[ 4 + i + j];      
+      result[4 + i + j] = (char) STUF7D1;     
       j++;
       result[4 + i + j] = (char) STUF7D2;
-      //sprintf(result + 4 + i + j, "%c", (char) STUF7D2);
-      //bcc2 = bcc2 ^ result[ 4 + i + j];
     }
-    else{      
-      //printf("A\n");
+    else{
       result[4 + i + j] = message[i];
-      //printf("?\n");
-      //sprintf(result + 4 + i + j, message + i, 1);
-      //bcc2 = bcc2 ^ result[4 + i + j];
       
     }
 
-    //printf("%d\n", 4 + i + j);
-    /*printf("i: %d", i+j);
-    printf(" ; char: %c\n", result[ 4 + i + j]);*/
-    //result[3 + size] = message[i];
-    //bcc2 = bcc2 ^ message[i];
   }
 
-  //printf("End of a loop.\n");
-  //printf("%s\n", result);
-  //printf("\n");
-  /*
-  for(int i = 0; i < size; i++){
-    if(result[i + 4] == '\0'){
-      write(STDOUT_FILENO, "A", 1);
-    }
-    else{
-    write(STDOUT_FILENO, result + i + 4, 1);
-    }
-  }*/
-
-  printf("Bcc2 before special check: %d\n", (unsigned char) bcc2);
-
-  //printf("\n");
-  //printf("bcc2: %d, flag, %d", (int) bcc2, FLAG);
-  //printf("true?: %d, %d", bcc2 == (char) FLAG, 1 == 1);
   if(bcc2 == (char) FLAG){
     sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG1);
     j++;
-    //sprintf(result + 4 + (real_size) + j, "%c", (char) STUFFLAG2);
     result[4 + (real_size) + j] =  (char) STUFFLAG2;
   }else if(bcc2 == (char) REPLACETRAMA2){
     sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D1);
     j++;
-    //sprintf(result + 4 + (real_size) + j, "%c", (char) STUF7D2);
     result[4 + (real_size) + j] =  (char) STUF7D2;
   }
-  else{    
-    //sprintf(result + 4 + (real_size) + j, "%c", (char) bcc2); 
+  else{
     result[4 + (real_size) + j] = (char) bcc2;
   }
-  //printf("bcc: %c", *(result + 4 + (real_size) + j));
   result[5 + (real_size) + j] = (char) FLAG;
-  //sprintf(result + 5 + (real_size) + j, "%c", (char) FLAG);
   (*size) += 6 + j;
   real_size = (*size);
   //Print final message
-  /*for(int i = 0; i < (*size) + j; i++){
-    write(STDOUT_FILENO, result + i, 1);
-  }*/
-  //write(STDOUT_FILENO, result, 6 + (real_size) + j);
-  //printf("Size: %d\n", real_size);
   memcpy(message, result, (real_size));
   
 }
@@ -532,7 +468,6 @@ int destuffing(int isOdd, char * message, int * size){
   if(message[(*size) - 2] == (char) STUF7D2){
 	  bcc1_received = REPLACETRAMA2;
     endchars = (*size) - 2;
-   // printf("bcc with stuffing.\n");
     bcc1_received = (int) message[(*size)-2];
    if(message[(*size) - 3] == STUF7D1){
      bcc1_received = (int) message[(*size)-3];
@@ -543,31 +478,23 @@ int destuffing(int isOdd, char * message, int * size){
   else if(message[(*size) - 2] == (char) STUFFLAG2){
 	bcc1_received = FLAG;
     endchars = (*size) - 2;
-   // printf("bcc with stuffing.\n");
     bcc1_received = (int) message[(*size)-2];
     if(message[(*size) - 3] == STUFFLAG1){
       bcc1_received = (int) message[(*size)-3];
       endchars--;
     }
-    
-    //endchars--;
   }
   else{
     endchars = (*size) - 2;
 	  bcc1_received = (unsigned int) (message[(*size)-2] & 0xff);
-    //bcc2_received = (unsigned int) (message[(*size)-3] & 0xff);
   }
 
   int bcc2 = 0;
   int j = 0;
   int countnext = 1;
-  //printf("Went past first part.\n");
 
   for(int i = 4; i < endchars; i++){
     if(message[i + j] == (char) STUFFLAG1 || message[i + j] == (char) STUF7D1){
-      //printf("first if, i = %d\n", i-4);
-
-      //bcc2 = bcc2 ^ message[i + j];
       if(message[i + j] == (char) STUFFLAG1){
         bcc2 = bcc2 ^ (char) FLAG;
         countnext = 0;
@@ -578,17 +505,11 @@ int destuffing(int isOdd, char * message, int * size){
       }
 
       if(message[i + 1 + j] == (char) STUFFLAG2){
-      //printf("second if.\n");
         resu[i-4] = (char) FLAG;
       }
       else if(message[i + 1 + j] == (char) STUF7D2){
-      //printf("third if.\n");
         resu[i-4] = (char) REPLACETRAMA2;
       }
-      else{
-      //printf("else.\n");
-      }
-	    //real_size--;
       endchars--;
       j++;
     }
@@ -600,37 +521,16 @@ int destuffing(int isOdd, char * message, int * size){
         countnext = 1;
       }
       resu[i-4] = message[i + j];
-	  //bcc2 = bcc2 ^ resu[i-4];
     }
   }
-
-	/*bcc2 = 0;
-  for (int i = 0; i < real_size; i++){
-		bcc2 = bcc2 ^  resu[i];
-  }*/
   
   (*size) -= j + 4 + 2;
   real_size = (*size);
-  //printf("reached memcpy.\n");
- // printf("%d\n", endchars);
- // printf("size: %d\n",real_size);
-  //int sub_bcc_count = 0;
-  /*if(endchars - j - 6 == (*size) - 3){
-    printf("A\n");
-    sub_bcc_count = 1;
-    //real_size--;
-  }*/
   bcc2 = 0;
   for (int i = 0; i < (*size); i++){
 		bcc2 = bcc2 ^  resu[i];
   }
 
-  if((*size) == 500){
-  printf("Bcc1 recieved: %d\n", (unsigned char) bcc1_received);
-  printf("Bcc2 recieved: %d\n", (unsigned char) bcc2_received);
-  printf("Bcc2: %d\n", (unsigned char) bcc2);
-  }
-  
   memcpy(message, resu, real_size);
 
   bcc2 = 0;
@@ -638,30 +538,17 @@ int destuffing(int isOdd, char * message, int * size){
 		bcc2 = bcc2 ^  message[i];
   }
 
-  printf("bcc2 from read: %x\n", bcc2);
-  printf("bcc2 from read: %x\n", bcc1_received);
-  printf("bcc2 from read: %x\n", bcc2_received);
- // printf("Endchars: %d\n", endchars);
-  if((*size) == 500){
-  printf("Endchars - 6: %d\n", endchars - 6);
-  printf("size - 3: %d\n", (*size) - 3);
-  }
   if(endchars - 6 == (*size) - 3){
     (*size)--;
     return 0;
   }
   else if((unsigned int) (bcc1_received & 0xff) == (unsigned int) (bcc2 & 0xff)){
-   // printf("destuffing sucessful.");
     return 0;
   }
 
   else if ((unsigned int) (bcc2_received & 0xff) == (unsigned int) (bcc2 & 0xff)){
-   // printf("destuffing sucessful.");
     return 0;
   }
-
- // printf("Destuffing failed: bcc_received: %d, real_bcc: %d\n", (unsigned int) (bcc1_received & 0xff),(unsigned int) (bcc2 & 0xff));
- // printf("bcc2_alternative: %d\n", bcc2_received);
   return 1;
 }
 
@@ -706,15 +593,12 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   {
   
   case START:
-    //printf("START\n");
-    //printf("byte: %d\n", (int) byte);
     if (byte == FLAG) *state = FLAG_RCVD;
     else
         *state = START;
     break;
   
   case FLAG_RCVD:
-    //printf("FLAG_RCVD\n");
     if (byte == A_SEND) *state = A_RCVD;
     else if(byte == A_Recieve){
       *state = DISCA;
@@ -731,7 +615,6 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
   
   case A_RCVD:
-    //printf("A_RCVD\n");
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
     }
@@ -742,7 +625,6 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case C_RCVD:
-    //printf("C_RCVD\n");
     if (byte == (A_SEND ^ BASEIC) || byte == (A_SEND ^ EVENIC)){
       *state = BCC1_RCVD;
     }
@@ -753,7 +635,6 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
 
   case BCC1_RCVD:
-    //printf("BCC1_RCVD\n");
     if (byte != FLAG) *state = DATA_RCVD;
     else {
       *state = START;
@@ -761,14 +642,12 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     }
     break;
   case DATA_RCVD:
-    //printf("DATA_RCVD\n");
-    if (byte == FLAG){ *state = END; //sucess
-      //printf("End.\n");
-      }
+    if (byte == FLAG){ 
+      *state = END; //sucess
+    }
     break;
 
   case END: 
-    //printf("END\n");
     break;
 
   case ERROR:
@@ -821,48 +700,29 @@ int llwrite(int fd, char * buffer, int length){
     InformationFrameState state = START;
     char cbyte;
     while(state != END && !flag_rewrite_frame){
-      res = read(fd, &cbyte , 1);//+ num_times, 1);
-      /*if(res != -1){
-        num_times++;
-        res = num_times;
-      }*/
+      res = read(fd, &cbyte , 1);
       if (res < 0) continue;
       readResponse(&state, cbyte, response);
     }
-    /*char temp[6] = "";
-    int res2 = read(fd, temp, 6);
-    if(res2 != 0){
-        printf("Res2 != 0, temp[0] = %d", (unsigned char) temp[0]);
-    }
-    if (res == -1){
-      perror("fd");
-
-      //sleep(1);
-    }*/
     if (state == END){
       int result = ((response[2] == RR0 || response[2] == RR1) ? ACK : NACK);
       if (result == ACK){
         alarm(0); //clear alarms
         printf("Success.\n");
-        //odd = (odd + 1) % 2;
         ll.sequenceNumber++;
         ll.sequenceNumber %= 2;
         break;
       }
 	  else{
       	printf("NACK read. \n");
-      	//alarm(0);
       	flag_rewrite_frame = 1;
-      	//break;
       }
 
     }
 
     else{
       printf("Invalid. \n");
-      //alarm(0);
       flag_rewrite_frame = 1;
-      //break;
     }
   }
   return length;
@@ -875,13 +735,9 @@ Ver pags 14 e 15 do guião
 int llread(int fd, char * buffer){
   int verify = -1;
   int frame_length = readInformationFrame(fd, buffer, &verify);
-    printf("llread\n");
   if(frame_length >= 0){
-    //write(STDOUT_FILENO, buffer, frame_length);
-    //fflush(stdout);
     char response[6] = "";
     int current_N = 0; //numero de serie por parte do recetor
-    //printf("Verify %d\n", verify);
       switch(verify){
         case ACK:
             if(destuffing(ll.sequenceNumber, buffer, &frame_length) == 0){
@@ -898,8 +754,6 @@ int llread(int fd, char * buffer){
           llread_success = 0;
           ll.sequenceNumber++;
           ll.sequenceNumber %= 2;
-          //printf("Frame length: %d\n", frame_length);
-          //printf("C\n");
           break;
         case NACK:
           llread_success = 1;
@@ -931,7 +785,6 @@ int llread(int fd, char * buffer){
       disc[3] = (A_Recieve ^ DISC);
       disc[4] = FLAG;
       write(fd, disc, 5);
-      //alarm(3);
       char UA[5];
       int response = read(fd, UA, 5);
       if(UA[0] == (char) FLAG && UA[1] == (char) A_Recieve && UA[2] == (char) C_UA && UA[3] == (char) (A_Recieve ^ C_UA) && UA[4] == (char) FLAG){
@@ -1033,8 +886,6 @@ int checkdisc(char * str){
 }
 
 int llclose(int fd){
-      //printf("llclose\n");
-
   char disc[6] = "";
   sprintf(disc, "%c", (char) FLAG);
   sprintf(disc + 1, "%c", (char) A_Recieve);
@@ -1048,7 +899,6 @@ int llclose(int fd){
   sprintf(UA + 3, "%c", (char) (A_Recieve ^ C_UA));
   sprintf(UA + 4, "%c", (char) FLAG);
 
-
   tries = 0;
   flag_rewrite_frame = TRUE;
       printf("llclose\n");
@@ -1061,7 +911,6 @@ int llclose(int fd){
     }
     char response[6] = "";
     printf("Reading\n");
-    //int res = read(fd, response, 5);
     int num_times = 0;
     while(num_times < 5){
       res = read(fd, response + num_times, 1);
@@ -1074,11 +923,6 @@ int llclose(int fd){
         break;
       }
     }
-
-    for(int i = 0; i < 5; i++){
-      printf("%x ", (int) response[i]);
-    }
-    printf("Length: %d\n", res);
     printf("Read successful\n");
     if (res == -1) perror("fd");
     else if (res == 5){
