@@ -16,7 +16,7 @@ int res, fd;
 
 //int flag_rewrite_SET = TRUE; //In the first input loop, dictates wether SET should be rewritten 
 void printInvalidArgumentMessage(){
-  printf("Usage: nserial /dev/tty/ttyS1 n\nn >= 11, n <= 131082");
+  printf("Usage:\twncan SerialPort number_of_bytes_in_trama Baudrate Filename\n\tex: ncan /dev/ttyS1 500 B38400 pinguim.gif\n");
 }
 
 int main(int argc, char** argv)
