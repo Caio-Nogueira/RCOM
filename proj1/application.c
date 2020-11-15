@@ -36,7 +36,8 @@ void readFile(char *filename){
 //create file
 void createFile(char *filename){
     FILE * myfile;
-    myfile = fopen(application.file_name, "w+");
+    //myfile = fopen(application.file_name, "w+");
+    myfile = fopen(filename, "w+");
     application.file = myfile;
 }
 
@@ -194,7 +195,7 @@ void readPackets(int fd, char* filename){
                 break;
             }
             else{
-                printf("Application layer: ");
+                printf("Application layer failure. exiting.");
                 exit(1);
             }
         }

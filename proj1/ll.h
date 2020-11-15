@@ -80,9 +80,9 @@ int destuffing(int odd, char * message, int * size);
 
 int llwrite(int fd, char * buffer, int length);
 
-int readInformationFrame(int fd, char* buffer, int* success);
+int readInformationFrame(int fd, char* buffer, int* success, int* duplicate);
 
-void DataFrameStateMachine(InformationFrameState *state, char byte);
+void DataFrameStateMachine(InformationFrameState *state, char byte, int* duplicate);
 
 int llread(int fd, char * buffer);
 

@@ -382,7 +382,6 @@ void llopen(int fd, flag flag, long baud){
             
             printf("Sending UA.\n");
             res = write(fd, UAsend, 5);
-            printf("%s\n", UAsend);
             printf("UA sent.\n");
 
             break;
@@ -541,7 +540,7 @@ int destuffing(int isOdd, char * message, int * size){
   return 1;
 }
 
-int readInformationFrame(int fd, char* buffer, int* success){
+int readInformationFrame(int fd, char* buffer, int* success, int* duplicate){
   //read I frame
   int len = 0;
   char byte;
@@ -552,7 +551,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
 
   
   while (read(fd, &byte, 1) > 0){
-    DataFrameStateMachine(&state, byte);
+    DataFrameStateMachine(&state, byte, duplicate);
     if(state == START){
       len = 0;
     }
@@ -577,7 +576,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
 }
 
 
-void DataFrameStateMachine(InformationFrameState *state, char byte){
+void DataFrameStateMachine(InformationFrameState *state, char byte, int* duplicate){
   switch (*state)
   {
   
@@ -606,6 +605,12 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
   case A_RCVD:
     if (byte == EVENIC || byte == BASEIC){
       *state = C_RCVD;
+      if(byte == EVENIC && ll.sequenceNumber == 1 || byte == BASEIC && ll.sequenceNumber == 0){
+        (*duplicate) = 0;
+      }
+      else if(byte == EVENIC && ll.sequenceNumber == 0 || byte == BASEIC && ll.sequenceNumber == 1){
+        (*duplicate) = 1;
+      }
     }
     else {
       *state = START;
@@ -673,16 +678,21 @@ int llwrite(int fd, char * buffer, int length){
   tries = 0;
   flag_rewrite_frame = TRUE;
 
-
+  
   buildwritearray(odd, buffer, (size_t *) &length);
+  char a;
+  /*if(rand() % 20 == 0){
+    a = buffer[length - 2];
+    buffer[length - 2]++;
+  }*/
   while (tries < NUM_TRIES){
     if (flag_rewrite_frame){
       flag_rewrite_frame = 0;
       write(fd, buffer, length);
+      //buffer[length - 2] = a;
       alarm(20);
     }
     char response[5];
-	printf("Length: %d\n", length);
 
     
     int num_times = 0;
@@ -694,10 +704,16 @@ int llwrite(int fd, char * buffer, int length){
       readResponse(&state, cbyte, response);
     }
     if (state == END){
-      int result = ((response[2] == RR0 || response[2] == RR1) ? ACK : NACK);
+      printf("response[2]: %x", response[2]);
+      printf("question?: %x, true: %x", (unsigned char) response[2] == RR1, TRUE);
+      int result = (((unsigned char) response[2] == RR0 || (unsigned char) response[2] == RR1) ? ACK : NACK);
+      int duplicate = (((unsigned char) response[2] == RR0 && ll.sequenceNumber == 1) || ((unsigned char) response[2] == RR1 && ll.sequenceNumber == 0)) ? ACK : 1;
       if (result == ACK){
         alarm(0); //clear alarms
         printf("Success.\n");
+        if(duplicate == 1){
+          printf("Duplicate packet.");
+        }
         ll.sequenceNumber++;
         ll.sequenceNumber %= 2;
         break;
@@ -723,31 +739,46 @@ Ver pags 14 e 15 do guião
 */
 int llread(int fd, char * buffer){
   int verify = -1;
-  int frame_length = readInformationFrame(fd, buffer, &verify);
+  int duplicate = 0;
+  int frame_length = readInformationFrame(fd, buffer, &verify, &duplicate);
   if(frame_length >= 0){
     char response[6] = "";
     int current_N = 0; //numero de serie por parte do recetor
       switch(verify){
         case ACK:
             if(destuffing(ll.sequenceNumber, buffer, &frame_length) == 0){
-                buildRresponse(response, &ll.sequenceNumber, ACK);
+                if(duplicate != 1){
+                  ll.sequenceNumber++;
+                  ll.sequenceNumber %= 2;
+                }
+                else{
+                  printf("Duplicate packet.\n");
+                }
+                /*if(rand() % 20 == 0){
+                  printf("Random chance to not respond has been triggered.\n");
+                }*/
+                //else{
+                  buildRresponse(response, &ll.sequenceNumber, ACK);
+                //}
                 break; 
             }
             else{
                 printf("Destuffing error\n");
                 llread_success = 1;
                 buildRresponse(response, &ll.sequenceNumber, NACK);
+                write(fd, response, 5);
                 return -1;
             break;
-          } 
-          llread_success = 0;
-          ll.sequenceNumber++;
-          ll.sequenceNumber %= 2;
+            } 
+          //llread_success = 0;
+          //ll.sequenceNumber++;
+          //ll.sequenceNumber %= 2;
           break;
         case NACK:
           llread_success = 1;
           printf("NACK read.\n");
           buildRresponse(response, &ll.sequenceNumber, NACK);
+          write(fd, response, 5);
           return -1;
           break;
         case DISCONNECT:
@@ -763,7 +794,11 @@ int llread(int fd, char * buffer){
           printf("Default case.\n");
           break;
       }
+      printf("sequence number at the end: %d", ll.sequenceNumber);
       write(fd, response, 5);
+      if(duplicate == 1){
+        return 0;
+      }
       return frame_length;
     }
   else if(frame_length == -1){
@@ -847,7 +882,7 @@ int readResponse(InformationFrameState* state, unsigned char byte, unsigned char
         }
         break;
         case A_RCVD:
-            if (byte == RR0|| byte == RR1 || byte == REJ0 || byte == REJ1 || byte == C_UA || byte == DISC){*state = C_RCVD; message[2] = byte;}
+            if (byte == RR0 || byte == RR1 || byte == REJ0 || byte == REJ1 || byte == C_UA || byte == DISC){*state = C_RCVD; message[2] = byte;}
             else if(byte == FLAG){*state = FLAG_RCVD; message[0]=byte;}
             else *state = START;
             break;
