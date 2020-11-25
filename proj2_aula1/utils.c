@@ -1,24 +1,8 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-
-#define USERNAME_LENGTH 255
-#define PASSWORD_LENGTH 255
-#define HOST_LENGTH 255
-#define URL_LENGTH 1023
-
+#include "utils.h"
 
 //Struct that contains the username, password, host and url path of the URL typed
-struct fields {
-    char user[USERNAME_LENGTH];
-    char password[PASSWORD_LENGTH];
-    char hostname[HOST_LENGTH];
-    char urlPath[URL_LENGTH];
-};
-
 
 int parseURL(char* string, int length, struct fields *tcpInfo){
-    printf("Function was called\n");
 
     //Number of characters already parsed.
     int parsingPoint = 0;
@@ -75,7 +59,6 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
         printf("No '/' after hostname field.\n");
         return 12;
     }
-    printf("Hostname length: %d\n", hostnameLength);
     //Copy username onto struct element
     strncpy(tcpInfo->hostname, string + parsingPoint, hostnameLength);
     tcpInfo->hostname[hostnameLength] = '\0';
@@ -83,25 +66,7 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
     parsingPoint++; //The '@' char
 
     strcpy(tcpInfo->urlPath, string + parsingPoint);
-    tcpInfo->urlPath[length - parsingPoint];
+    tcpInfo->urlPath[length - parsingPoint] = '\0';
 
     return 0;
 }
-
-int main(int argc, char** argv){
-    struct fields tcpInfo;
-    if(argc == 1){
-        printf("Missing URL field.\n");
-        return 1;
-    }
-    int parseRes = parseURL(argv[1], strlen(argv[1]), &tcpInfo);
-    if(parseRes){
-        return parseRes;
-    }
-    printf("Username: %s\n", tcpInfo.user);
-    printf("Password: %s\n", tcpInfo.password);
-    printf("Hostname: %s\n", tcpInfo.hostname);
-    printf("Path: %s\n", tcpInfo.urlPath);
-    return 0;
-}
-
