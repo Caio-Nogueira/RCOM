@@ -20,21 +20,58 @@
 int readAndPrintEverything(char * buf, int length, int sockfd){
 	int bytes = 0;
 	int lines_read = 0; //Ou times_read, quando/se fizermos o TODO
-	while(1){
+	
+	int lastBuffer = FALSE;
+	int endOfLine = TRUE;
+	int endOfBuf = FALSE;
+	int startBytes = 0;
+	int endBytes = 0;
+	
+	//int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, int* startBytes, int* endBytes);
+	while(lastBuffer == FALSE){
+		//Set start and end bytes to 0
+		startBytes = 0;
+		endBytes = 0;
+		endOfBuf = FALSE;
+
+
 		bytes = read(sockfd, buf, 255);
 		if(bytes <= 0){
 			perror("a");
 			continue;
 		}
 		buf[bytes] = '\0';
-		printf("%s\n", buf);
+		
+
+		while(endOfBuf != TRUE){
+			int a = get_line(buf, bytes, &lastBuffer, &endOfLine, &endOfBuf, &startBytes, &endBytes);
+			if(endOfLine == TRUE){
+				printf("%c", buf[startBytes - 4]);
+				printf("%c", buf[startBytes - 3]);
+				printf("%c", buf[startBytes - 2]);
+				printf("%c", buf[startBytes - 1]);
+			}
+			for(int i = startBytes; i<endBytes; i++){
+				printf("%c", buf[i]);
+			}
+			if(endOfLine == TRUE){
+				printf("\n");
+			}
+			endBytes++;
+		}
+
+		//finalLine = find_lines(buf, bytes, &startLine);
+		
+		//printf("%s\n", buf);
+		/*
+		for(int i = 0; i < bytes; i++){
+			printf("%x ", buf[i]);
+		}
+		printf("\n");
+		printf("Bytes %d\n", bytes);*/
 		lines_read++;
 		//TODO: Add part where, if the line isn't over yet, it keeps reading
-		if(buf[0] != '2' && buf[0] != '3'){
-			return -1;
-		}
-		if(buf[3] != '-')
-			break;
+		
 	}
 	return lines_read;
 }
@@ -86,7 +123,7 @@ int main(int argc, char** argv){
 	printf("Abc\n");
 	readAndPrintEverything(buf, 256, sockfd);
 	printf("Finished\n");
-
+	/*
 	printf("Writting.\n");
 	
 	write(sockfd, "user anonymous", sizeof("user anonymous"));
@@ -96,7 +133,7 @@ int main(int argc, char** argv){
 	int bytes = read(sockfd, buf, 256);
 	buf[bytes] = '\0';
 	printf("Response to username: %s\n", buf);
-	
+	*/
 
 
 	/*send a string to the server*/

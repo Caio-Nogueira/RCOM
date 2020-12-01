@@ -70,3 +70,42 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
 
     return 0;
 }
+
+int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, int* startBytes, int* endBytes){
+    (*startBytes) = (*endBytes);
+    
+    //Last time this function was used, it finished on a newline character
+    if((*endOfLine) == TRUE){
+        if(buf[(*startBytes)] == '2' || buf[(*startBytes)] == '3'){
+            //Start of a new line 
+            if(buf[(*startBytes) + 3] == '-'){
+                //More lines should be read from the server
+            }
+            else{
+                //Nothing else should be read from the server for now
+                (*lastBuf) = TRUE;
+            }
+            (*startBytes) += 4;
+        }
+        else{
+            printf("Invalid response.\n");
+        }
+    }
+    char* endSpot = strchr(buf + (*startBytes), '\n');
+    if(endSpot == NULL){
+        //Didn't finish on a newline
+        (*endOfLine) = FALSE;
+        (*endOfBuf) = TRUE;
+        (*endBytes) = bytes;
+        return 0;
+    }
+    else{
+        //Finished on a newline
+        (*endOfLine) = TRUE;
+    }
+    (*endBytes) = endSpot - buf;
+    if((*endBytes) == bytes - 1){
+        (*endOfBuf) = TRUE;
+    }
+    return 0;
+}
