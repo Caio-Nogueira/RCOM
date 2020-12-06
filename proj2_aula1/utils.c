@@ -1,5 +1,5 @@
 #include "utils.h"
-
+#include <ctype.h>
 //Struct that contains the username, password, host and url path of the URL typed
 
 int parseURL(char* string, int length, struct fields *tcpInfo){
@@ -32,7 +32,10 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
     parsingPoint += usernameLength;
     parsingPoint++; //The ':' char
 
-
+    if(parsingPoint == length){
+        printf("No password was inserted.\n");
+        return 122;
+    }
     //Parse password
     int passwordLength = strcspn(string + parsingPoint, "@");
     if(passwordLength + 1 > PASSWORD_LENGTH){
@@ -49,7 +52,12 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
     parsingPoint += passwordLength;
     parsingPoint++; //The '@' char
     
-    //Parse password
+
+    if(parsingPoint == length){
+        printf("No hostname was inserted.\n");
+        return 122;
+    }
+    //Parse hostname
     int hostnameLength = strcspn(string + parsingPoint, "/");
     if(hostnameLength + 1 > PASSWORD_LENGTH){
         printf("Hostname is too long");
@@ -89,6 +97,7 @@ int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, 
         }
         else{
             printf("Invalid response.\n");
+            return 1;
         }
     }
     char* endSpot = strchr(buf + (*startBytes), '\n');
@@ -108,4 +117,46 @@ int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, 
         (*endOfBuf) = TRUE;
     }
     return 0;
+}
+
+int get_port(char * buf, int num_bytes){
+    int port = 0;
+    char * lastComma = strrchr(buf, ',');
+    int i = lastComma - buf + 1;
+    int port2 = 0;
+    while(i < num_bytes){
+        if(isdigit(buf[i])){
+            port2 *= 10;
+            port2 += (unsigned char) buf[i] - 48;
+        }
+        else{
+            break;
+        }
+        i++;
+    }
+
+
+    char * result = strchr(buf, ',');
+    result++;
+    result = strchr(result, ',');
+    result++;
+    result = strchr(result, ',');
+    result++;
+    result = strchr(result, ',');
+    result++;
+    
+    i = result - buf;
+    while(i < num_bytes){
+        if(isdigit(buf[i])){
+            port *= 10;
+            port += (unsigned char) buf[i] - 48;
+        }
+        else{
+            break;
+        }
+        i++;
+    }
+    port *= 256;
+    port += port2;
+    return port;
 }
