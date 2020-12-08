@@ -23,3 +23,5 @@ int parseURL(char* string, int length, struct fields *tcpInfo);
 int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, int* startBytes, int* endBytes);
 
 int get_port(char * buf, int num_bytes);
+
+char* getFilenameFromPath(char* url);

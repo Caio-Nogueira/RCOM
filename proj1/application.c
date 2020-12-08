@@ -70,7 +70,7 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     //send file size
     char T1 = (unsigned char) 0;
     int L1 = sizeof(application.fileSize);
-    printf("L1 = %d\n", L1);
+    //printf("L1 = %d\n", L1);
     int file_size = application.fileSize;
 
     
@@ -115,7 +115,7 @@ void sendControlPacket(int controlCamp, char* filename, int fd, int num_bytes_me
     }
 
     int bytes_written = llwrite(fd, controlPacket, 5+num_bytes+j);
-    printf("Control packet successful sent.\n");
+    //printf("Control packet successful sent.\n");
 }
 
 void readControlPacket(int fd, char* string){ //  receiver port filedes
@@ -146,7 +146,7 @@ void sendDataPackets(int fd, char* filename, int num_bytes_message){
 
     int length = 1;
     unsigned char buf[CHUNK_LEN+1];
-    printf("Reading packets now: %d\n", application.fileSize);
+    //printf("Reading packets now: %d\n", application.fileSize);
     while (bytesRead < application.fileSize){
         int bytes = read(application.fileDescriptor, &buf, num_bytes_message);
         bytesRead += bytes;
@@ -168,7 +168,7 @@ void sendDataPackets(int fd, char* filename, int num_bytes_message){
     sendControlPacket(CONTROL_END, filename, fd, num_bytes_message);
 }
 
-void readPackets(int fd, char* filename){
+void readPackets(int fd){
     printf("Start of readPackets\n");
     char buf[MAX_TRAMA_SIZE];
     unsigned int current = -1;
@@ -186,7 +186,7 @@ void readPackets(int fd, char* filename){
         
             else if (buf[0] == 0x02) {
                 readControlPacket(fd, buf);
-                createFile(filename);
+                createFile(application.file_name);
             }
 
             else if (buf[0] == 0x03) {
@@ -194,7 +194,7 @@ void readPackets(int fd, char* filename){
                 break;
             }
             else{
-                printf("Application layer: ");
+                //printf("Application layer: ");
                 exit(1);
             }
         }

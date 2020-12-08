@@ -11,7 +11,9 @@
 #include <netdb.h>
 #include <strings.h>
 #include <string.h>
-
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "utils.h"
 
 #define SERVER_PORT 21
@@ -203,25 +205,63 @@ int main(int argc, char** argv){
     int datafd = create_socket(inet_ntoa(*((struct in_addr *)h->h_addr)), port);
 
 
-	char command[512];
+	//char command[512];
 
-    sprintf(command, "telnet %s %d\n", tcpInfo.hostname, port);
+    //sprintf(command, "telnet %s %d\n", tcpInfo.hostname, port);
 
-    if (write(datafd, command, strlen(command)) < 0) {
+    /*if (write(datafd, command, strlen(command)) < 0) {
         perror("Failed to send command.\n");
         exit(1);
-    }
+    }*/
 
 	
+	//char* filename = malloc(strlen(tcpInfo.urlPath) + 1);
+
+
 	printf("writting the retrieve command\n");
-	write(sockfd, "retr pipe.txt\n", strlen("retr pipe.txt\n"));
+	char* retr_command = malloc(strlen(tcpInfo.urlPath) + 6);
+	sprintf(retr_command, "retr %s\n", tcpInfo.urlPath);
+	printf("command: %s\n", retr_command);
+	write(sockfd, retr_command, strlen(retr_command));
+
+
 
 	printf("reading the retrieve command\n");
 	//readAndPrintEverything(new_buf, 256, datafd);
-	bytes = read(datafd, buf, 256);
-	buf[bytes] = '\0';
-	printf("buf: %s", buf);
+	//bytes = read(datafd, buf, 256);
+	//buf[bytes] = '\0';
 
+	/*char response[1024];
+
+	FILE* file = fdopen(sockfd, "r");
+
+	fgets(response, 1024, file);
+
+	int response_code;
+
+	sscanf(response, "%d", &response_code);
+
+	if (response_code != 150) {
+		printf("Error opening file\n");
+		fclose(file);
+		close(sockfd);
+		close(datafd);
+		exit(1);
+	}*/
+
+	char filename[256];
+
+	strcpy(filename, getFilenameFromPath(tcpInfo.urlPath));
+
+	getFilenameFromPath(filename);
+
+	int fd = open(filename, O_CREAT | O_WRONLY , 0644);
+	char byte;
+
+	while (read(datafd, &byte, 1) > 0) {
+		write(fd, &byte, 1);
+	}
+	
 
 	close(datafd);
 	close(sockfd);

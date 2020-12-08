@@ -160,3 +160,17 @@ int get_port(char * buf, int num_bytes){
     port += port2;
     return port;
 }
+
+
+char* getFilenameFromPath(char* url){
+    int fileSize = strlen(url);
+    int i = 0;
+    while (i < fileSize) {
+        if (url[i] == '/') {
+            url += i + 1;
+        }
+        i++;
+    }
+    return url;
+}
+

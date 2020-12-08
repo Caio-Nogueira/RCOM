@@ -39,6 +39,6 @@ void sendDataPackets(int fd, char* filename, int num_bytes_message);
 
 int getDataLen(char* frame);
 
-void readPackets(int fd, char* filename);
+void readPackets(int fd);
 
 void createFile(char *filename);

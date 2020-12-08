@@ -1,35 +1,19 @@
 /*Non-Canonical Input Processing*/
-
-
 #include "application.h"
-
 #define MODEMDEVICE "/dev/ttyS11"
-
-
-
-//char str[255]; //SET array
-//char stri[255]; //UA array
-//char UA[255]; //UA array
 int UA_read = FALSE;
-
 int res, fd;
-
 //int flag_rewrite_SET = TRUE; //In the first input loop, dictates wether SET should be rewritten 
 void printInvalidArgumentMessage(){
   printf("Usage:\twncan SerialPort number_of_bytes_in_trama Baudrate Filename\n\tex: ncan /dev/ttyS1 500 B38400 pinguim.gif\n");
 }
-
 int main(int argc, char** argv)
 {
     int c;
-
     int number_bytes_trama;
-
     //Parse arguments
     if ( (argc < 5) || 
-  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS11", argv[1])!=0)  &&
-          (strcmp("/dev/ttyS0", argv[1])!=0))) {
+  	     (strcmp("/dev/ttyS", argv[1])!=0)) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -56,17 +40,11 @@ int main(int argc, char** argv)
 
 	baud = strtol(argv[3], NULL,16);
 
-  /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-  */
-
 
     fd = open(argv[1], O_RDWR | O_NOCTTY );
     if (fd <0) {
       perror(argv[1]); exit(-1); 
-    }
-    
+    }    
     llopen(fd, TRANSMITTER, baud);
     printf("%d\n", number_bytes_message);
     sendControlPacket(CONTROL_START, argv[4], fd, number_bytes_message);
@@ -74,7 +52,5 @@ int main(int argc, char** argv)
     printf("BCSAC\n");
 
     llclose(fd);
-
-    //close(fd);
     return 0;
 }

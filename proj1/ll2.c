@@ -108,7 +108,7 @@ int verifyUA(char *UAresponse){//char str[]){
       }
       n++;
     }
-    printf("Sucess\n");
+    //printf("Sucess\n");
     return sucess;
 }
 
@@ -357,10 +357,7 @@ void llopen(int fd, flag flag, long baud){
                 num_times++;
               }
             }
-            for(int i = 0; i < 5; i++){
-              printf("%d", (int) str[i] & 0xFF);
-            }
-            //res = read(fd,str,6);   /* returns after 6 chars have been input */
+
             printf("Read string.\n");
             //receber e verificar o SET
             if (SETstateMachine(str) == FALSE){
@@ -515,10 +512,10 @@ int destuffing(int isOdd, char * message, int * size){
   
   (*size) -= j + 4 + 2;
   real_size = (*size);
-  bcc2 = 0;
+  /*bcc2 = 0;
   for (int i = 0; i < (*size); i++){
 		bcc2 = bcc2 ^  resu[i];
-  }
+  }*/
 
   memcpy(message, resu, real_size);
 
@@ -546,7 +543,7 @@ int readInformationFrame(int fd, char* buffer, int* success){
   int len = 0;
   char byte;
   InformationFrameState state = START;
-  printf("Start\n");
+  //printf("Start\n");
   alarm(20);
 
 
@@ -559,15 +556,15 @@ int readInformationFrame(int fd, char* buffer, int* success){
     buffer[len++] = byte;
     if (state == END) {
       *success = ACK;
-      printf("ACK achieved!\n");
+      //printf("ACK achieved!\n");
       return len;
     }
     else if (state == DISCONNECT){
-      printf("DISC achieved!\n");
+      //printf("DISC achieved!\n");
       return -1;
     }
     else if (state == ERROR){
-      printf("ERROR.\n");
+      //printf("ERROR.\n");
       break;
     }
   }
@@ -597,7 +594,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
         *state = FLAG_RCVD;
     }
     else {
-      printf("Error byte: %d\n", (int) byte);
+      //printf("Error byte: %d\n", (int) byte);
       *state = START;
       return;
     }
@@ -643,7 +640,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;
   case DISCA:
     if(byte == DISC){
-      printf("Disconnected C.\n");
+      //printf("Disconnected C.\n");
       *state = DISCC;
     }
     else{
@@ -651,7 +648,7 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     }
   case DISCC:
     if(byte == DISC || A_SEND){
-      printf("Disconnect BCC.\n");
+      //printf("Disconnect BCC.\n");
       *state = DISCBCC;
     }
     else{
@@ -660,10 +657,10 @@ void DataFrameStateMachine(InformationFrameState *state, char byte){
     break;  
   case DISCBCC:
     if(byte == FLAG){
-      printf("FLAG disconnect\n");
+      //printf("FLAG disconnect\n");
       *state = DISCONNECT;
     }
-    printf("\n");
+    //printf("\n");
   default:
     break;
   }
@@ -682,7 +679,7 @@ int llwrite(int fd, char * buffer, int length){
       alarm(20);
     }
     char response[5];
-	printf("Length: %d\n", length);
+	//printf("Length: %d\n", length);
 
     
     int num_times = 0;
@@ -697,20 +694,20 @@ int llwrite(int fd, char * buffer, int length){
       int result = ((response[2] == RR0 || response[2] == RR1) ? ACK : NACK);
       if (result == ACK){
         alarm(0); //clear alarms
-        printf("Success.\n");
+        //printf("Success.\n");
         ll.sequenceNumber++;
         ll.sequenceNumber %= 2;
         break;
       }
 	  else{
-      	printf("NACK read. \n");
+      	//printf("NACK read. \n");
       	flag_rewrite_frame = 1;
       }
 
     }
 
     else{
-      printf("Invalid. \n");
+      //printf("Invalid. \n");
       flag_rewrite_frame = 1;
     }
   }
@@ -746,13 +743,13 @@ int llread(int fd, char * buffer){
           break;
         case NACK:
           llread_success = 1;
-          printf("NACK read.\n");
+          //printf("NACK read.\n");
           buildRresponse(response, &ll.sequenceNumber, NACK);
           return -1;
           break;
         case DISCONNECT:
           llread_success = 0;
-          printf("Case disconnect.\n");
+          //printf("Case disconnect.\n");
           response[0] = FLAG;
           response[1] = A_Recieve;
           response[2] = DISC;
@@ -760,7 +757,7 @@ int llread(int fd, char * buffer){
           response[4] = FLAG;
           break;
         default: 
-          printf("Default case.\n");
+          //printf("Default case.\n");
           break;
       }
       write(fd, response, 5);
@@ -780,10 +777,10 @@ int llread(int fd, char * buffer){
         printf("UA detected, Ending now.\n");
       }
       else{
-        printf("%d\n", response);
-        for(int i = 0; i < 5; i++){
+        //printf("%d\n", response);
+        /*for(int i = 0; i < 5; i++){
           printf("%x", UA[i]);
-        }
+        }*/
         printf("Thing received isn't an UA. Exiting anyways, since the most likely option by far is errors in the UA sent\n");
       }
       exit(0);
@@ -906,7 +903,7 @@ int llclose(int fd){
       if(res != -1){
         num_times++;
         res = num_times;
-        printf("byte: %d", *(response+num_times));
+        //printf("byte: %d", *(response+num_times));
       }
       else{
         break;
