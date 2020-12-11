@@ -1,19 +1,5 @@
 /*      (C)2000 FEUP  */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <netdb.h>
-#include <strings.h>
-#include <string.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include "utils.h"
 
 #define SERVER_PORT 21
@@ -121,15 +107,22 @@ int main(int argc, char** argv){
     }
 	printf("Hostname: %s\n", tcpInfo.hostname);
 
+	if(tcpInfo.password[0] == '\0' && strcmp(tcpInfo.user, "anonymous")){
+		printf("Insert your password: ");
+		scanf("%s", tcpInfo.password);
+		printf("%s\n", tcpInfo.password);
+	}
+
     struct hostent *h;
+	
+	//Get the IP
     if ((h=gethostbyname(tcpInfo.hostname)) == NULL) {  
             herror("gethostbyname");
             exit(1);
     }
     printf("Host name  : %s\n", h->h_name);
     printf("IP Address : %s\n",inet_ntoa(*((struct in_addr *)h->h_addr)));
-
-
+	//Create socket from IP
 	int	sockfd = create_socket(inet_ntoa(*((struct in_addr *)h->h_addr)), SERVER_PORT);
 	
 	char buf[256];
@@ -139,7 +132,6 @@ int main(int argc, char** argv){
 	
 	//Write username
 	int length = strlen(tcpInfo.user);
-
 	write(sockfd, "user ", 5);
 	if(tcpInfo.user[0] == '\0'){
 		write(sockfd, "anonymous", 9);

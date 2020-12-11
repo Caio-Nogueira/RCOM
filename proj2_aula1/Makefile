@@ -11,4 +11,4 @@ clean:
 	@rm -f download
 
 download: clean main
-	@./download "ftp://anonymous:abc@ftp.up.pt/debian/README.mirrors.txt"
+	@./download "ftp://anonymous:xd@ftp.up.pt/debian/README.mirrors.txt"
