@@ -3,10 +3,8 @@
 //Struct that contains the username, password, host and url path of the URL typed
 
 int parseURL(char* string, int length, struct fields *tcpInfo){
-
     //Number of characters already parsed.
     int parsingPoint = 0;
-
 
     //Parse ftp://
     const int num_chars_url_before_user = 6;
@@ -16,42 +14,24 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
     }
     parsingPoint += num_chars_url_before_user;
 
-    //Parse username
-    int usernameLength = strcspn(string + parsingPoint, ":");
-    if(usernameLength + 1 > USERNAME_LENGTH){
-        printf("Username is too long");
-        return 111;
+    int usernameLength = getField(string, parsingPoint, ":",tcpInfo->user);
+    int passwordLength = 0;
+    if(usernameLength == 0){
+        int usernameLength = getField(string, parsingPoint, "@",tcpInfo->user);
+        strncpy(tcpInfo->password, "\0", 1);
+        parsingPoint += usernameLength;
+        if(usernameLength == 0){
+            parsingPoint--;
+        }
     }
-    if(parsingPoint + usernameLength == length){
-        printf("No ':' after username field.\n");
-        return 11;
+    else{
+        parsingPoint += usernameLength;
+        parsingPoint++; //The ':' char
+        passwordLength = getField(string, parsingPoint, "@",tcpInfo->password);
+        strncpy(tcpInfo->password, string + parsingPoint, passwordLength);
     }
-    //Copy username onto struct element
-    strncpy(tcpInfo->user, string + parsingPoint, usernameLength);
-    tcpInfo->user[usernameLength] = '\0';
-    parsingPoint += usernameLength;
-    parsingPoint++; //The ':' char
-
-    if(parsingPoint == length){
-        printf("No password was inserted.\n");
-        return 122;
-    }
-    //Parse password
-    int passwordLength = strcspn(string + parsingPoint, "@");
-    if(passwordLength + 1 > PASSWORD_LENGTH){
-        printf("Password is too long");
-        return 112;
-    }
-    if(parsingPoint + passwordLength == length){
-        printf("No '@' after password field.\n");
-        return 12;
-    }
-    //Copy password onto struct element
-    strncpy(tcpInfo->password, string + parsingPoint, passwordLength);
-    tcpInfo->password[passwordLength] = '\0';
     parsingPoint += passwordLength;
     parsingPoint++; //The '@' char
-    
 
     if(parsingPoint == length){
         printf("No hostname was inserted.\n");
@@ -75,7 +55,6 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
 
     strcpy(tcpInfo->urlPath, string + parsingPoint);
     tcpInfo->urlPath[length - parsingPoint] = '\0';
-
     return 0;
 }
 
@@ -161,6 +140,16 @@ int get_port(char * buf, int num_bytes){
     return port;
 }
 
+int getField(const char* string, int startPoint, char * delims, char* field){
+    int numchars = strcspn(string + startPoint, delims);
+    if(numchars == strlen(string) - startPoint){
+        field[0] = '\0';
+        return 0;
+    }
+    field = strncpy(field, string + startPoint, numchars);
+    field[numchars] = '\0';
+    return numchars;
+}
 
 char* getFilenameFromPath(char* url){
     int fileSize = strlen(url);

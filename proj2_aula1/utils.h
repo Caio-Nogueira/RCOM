@@ -25,3 +25,5 @@ int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, 
 int get_port(char * buf, int num_bytes);
 
 char* getFilenameFromPath(char* url);
+
+int getField(const char* string, int startPoint, char * delims, char* field);

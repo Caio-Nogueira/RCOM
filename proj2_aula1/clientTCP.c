@@ -141,7 +141,11 @@ int main(int argc, char** argv){
 	int length = strlen(tcpInfo.user);
 
 	write(sockfd, "user ", 5);
-	write(sockfd, tcpInfo.user, length);
+	if(tcpInfo.user[0] == '\0'){
+		write(sockfd, "anonymous", 9);
+	}else{
+		write(sockfd, tcpInfo.user, length);
+	}
 	write(sockfd, "\n", 1);
 
 	// Read response
