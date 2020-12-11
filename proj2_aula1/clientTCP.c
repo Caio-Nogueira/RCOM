@@ -130,71 +130,12 @@ int main(int argc, char** argv){
 
 	readAndPrintEverything(buf, 256, sockfd);
 	
-	//Write username
-	int length = strlen(tcpInfo.user);
-	write(sockfd, "user ", 5);
-	if(tcpInfo.user[0] == '\0'){
-		write(sockfd, "anonymous", 9);
-	}else{
-		write(sockfd, tcpInfo.user, length);
-	}
-	write(sockfd, "\n", 1);
-
-	// Read response
-	int bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
-	printf("Response to username: %s\n", buf);
-
-	//Verify response
-	if(buf[0] == '5' && buf[1] == '3' && buf[2] == '0'){
-		//Invalid username. Username should be "anonymous"
-		close(sockfd);
-		return 0;
-	}
-	else if(buf[0] != '3'){
-		//Server error.
-		close(sockfd);
+	//writes username, password and "pasv" commands, gets the port if the responses were correct
+	int port = writeAndReadFields(buf, sockfd, tcpInfo);
+	if(port == 0){
 		return 0;
 	}
 
-	//Write username
-	char * password = (char *) malloc(strlen(tcpInfo.password) + 7);
-	password[0] = 'p';
-	password[1] = 'a';
-	password[2] = 's';
-	password[3] = 's';
-	password[4] = ' ';
-	password[5] = '\0'; //Important! strcat will "break" otherwise
-	strcat(password, tcpInfo.user);
-	length = strlen(password);
-	password[length] = '\n';
-	password[length + 1] = '\0';
-	write(sockfd, password, strlen(password));
-
-	free(password);
-	bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
-	printf("Response to password: %s\n", buf);
-
-	//Verify response
-	if(buf[0] == '5' && buf[1] == '3' && buf[2] == '0'){
-		//Invalid password. Password should be "pass"
-		close(sockfd);
-		return 0;
-	}
-	else if(buf[0] != '2' && buf[0] != '3'){
-		//Server error.
-		close(sockfd);
-		return 0;
-	}
-
-	//Setting up passive mode
-	write(sockfd, "pasv\n", 5);
-	bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
-	printf("Response to pasv: %s\n", buf);
-
-	int port = get_port(buf, bytes);
 	printf("Port: %d\n", port);
 
 	//Data socket creation
@@ -264,5 +205,3 @@ int main(int argc, char** argv){
 	//exit(EXIT_SUCCESS);
 	return 0;
 }
-
-
