@@ -185,8 +185,9 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 		close(sockfd);
 		return 0;
 	}
-	else if(buf[0] != '3'){
+	else if(buf[0] != '3' && strcmp(tcpInfo.user, "anonymous")){
 		//Server error.
+        printf("Estou aqui2\n");
 		close(sockfd);
 		return 0;
 	}

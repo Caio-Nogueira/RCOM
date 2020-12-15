@@ -107,10 +107,16 @@ int main(int argc, char** argv){
     }
 	printf("Hostname: %s\n", tcpInfo.hostname);
 
-	if(tcpInfo.password[0] == '\0' && strcmp(tcpInfo.user, "anonymous")){
+	if(tcpInfo.password[0] == '\0' && strcmp(tcpInfo.user, "anonymous") && tcpInfo.user[0] != '\0'){
 		printf("Insert your password: ");
 		scanf("%s", tcpInfo.password);
 		printf("%s\n", tcpInfo.password);
+	}
+
+	else if (tcpInfo.user[0] == '\0') {
+		strcpy(tcpInfo.user, "anonymous");
+		printf("%s\n", tcpInfo.user);
+		strcpy(tcpInfo.password, "ftp");
 	}
 
     struct hostent *h;
@@ -125,10 +131,10 @@ int main(int argc, char** argv){
 	//Create socket from IP
 	int	sockfd = create_socket(inet_ntoa(*((struct in_addr *)h->h_addr)), SERVER_PORT);
 	
-	char buf[256];
+	char buf[10000];
 	printf("Reading\n");
 
-	readAndPrintEverything(buf, 256, sockfd);
+	readAndPrintEverything(buf, 10000, sockfd);
 	
 	//writes username, password and "pasv" commands, gets the port if the responses were correct
 	int port = writeAndReadFields(buf, sockfd, tcpInfo);
