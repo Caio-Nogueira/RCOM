@@ -231,3 +231,14 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 	int port = get_port(buf, bytes);
     return port;
 }
+
+
+int getFileSizeOnMessage(char* response){
+    int i = 0; 
+    while( response[i] != '(')
+        response++;
+    
+    int result;
+    sscanf(response+1, "%d", &result);
+    return result;
+}

@@ -160,7 +160,23 @@ int main(int argc, char** argv){
 	
 	//char* filename = malloc(strlen(tcpInfo.urlPath) + 1);
 
+	/*char* binaryCmd = "binary\n";
+	
+	write(sockfd, binaryCmd, strlen(binaryCmd));
+	
+	int binaryResponseCode = {0};
+	char binaryresponse[1024];
 
+	FILE* file1 = fdopen(sockfd, "r");
+	
+	fgets(binaryresponse, 1024, file1);
+	printf("%s\n", binaryresponse);
+	sscanf(binaryresponse, "%d", &binaryResponseCode);
+	printf("%d\n", binaryResponseCode);*/
+
+
+	
+	
 	printf("writting the retrieve command\n");
 	char* retr_command = malloc(strlen(tcpInfo.urlPath) + 6);
 	sprintf(retr_command, "retr %s\n", tcpInfo.urlPath);
@@ -170,27 +186,27 @@ int main(int argc, char** argv){
 
 
 	printf("reading the retrieve command\n");
-	//readAndPrintEverything(new_buf, 256, datafd);
-	//bytes = read(datafd, buf, 256);
-	//buf[bytes] = '\0';
 
-	/*char response[1024];
+	int responseCode = {0};
+	char response[1024];
 
 	FILE* file = fdopen(sockfd, "r");
 
 	fgets(response, 1024, file);
+	printf("%s\n", response);
+	sscanf(response, "%d", &responseCode);
 
-	int response_code;
+	int size = getFileSizeOnMessage(response);
+	printf("%d\n", size);
 
-	sscanf(response, "%d", &response_code);
+	if (responseCode != 150){
+		printf("Error\n");
+		return 1;
+	}
 
-	if (response_code != 150) {
-		printf("Error opening file\n");
-		fclose(file);
-		close(sockfd);
-		close(datafd);
-		exit(1);
-	}*/
+	else {
+		printf("Success: code = %d\n", responseCode);
+	}
 
 	char filename[256];
 
@@ -198,16 +214,26 @@ int main(int argc, char** argv){
 
 	getFilenameFromPath(filename);
 
-	int fd = open(filename, O_CREAT | O_WRONLY , 0644);
-	char byte;
+	int fd = open(filename, O_CREAT | O_WRONLY , 0666);
+	char bytes[1024];
+	int bytesRead;
+	float progress = 0.0;
+	int totalBytes = 0;
 
-	while (read(datafd, &byte, 1) > 0) {
-		write(fd, &byte, 1);
+	while ( (bytesRead = read(datafd, bytes, 1024))) {
+		if (bytesRead < 0){
+			perror("read()\n");
+			exit(1);
+		}
+		totalBytes += bytesRead;
+		progress = (totalBytes*100.0/size) ;
+		printf("Current progress: %f\n", progress);
+		write(fd, bytes, bytesRead);
 	}
 	
-
 	close(datafd);
 	close(sockfd);
-	//exit(EXIT_SUCCESS);
 	return 0;
 }
+
+

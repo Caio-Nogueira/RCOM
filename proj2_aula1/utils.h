@@ -41,3 +41,5 @@ char* getFilenameFromPath(char* url);
 int getField(const char* string, int startPoint, char * delims, char* field);
 
 int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo);
+
+int getFileSizeOnMessage(char* response);
