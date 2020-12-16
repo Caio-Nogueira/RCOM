@@ -175,8 +175,8 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 	write(sockfd, "\n", 1);
 
 	// Read response
-	int bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
+	//int bytes = read(sockfd, buf, 256);
+    readSocketResponse(sockfd, buf);
 	printf("Response to username: %s\n", buf);
 
 	//Verify response
@@ -187,7 +187,6 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 	}
 	else if(buf[0] != '3' && strcmp(tcpInfo.user, "anonymous")){
 		//Server error.
-        printf("Estou aqui2\n");
 		close(sockfd);
 		return 0;
 	}
@@ -207,8 +206,8 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 	write(sockfd, password, strlen(password));
 
 	free(password);
-	bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
+	readSocketResponse(sockfd, buf);
+	//buf[bytes] = '\0';
 	printf("Response to password: %s\n", buf);
 
 	//Verify response
@@ -224,11 +223,13 @@ int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){
 	}
 
 	//Setting up passive mode
+    
 	write(sockfd, "pasv\n", 5);
-	bytes = read(sockfd, buf, 256);
-	buf[bytes] = '\0';
+    
+	readSocketResponse(sockfd, buf);
+	//buf[bytes] = '\0';
 	printf("Response to pasv: %s\n", buf);
-	int port = get_port(buf, bytes);
+	int port = get_port(buf, strlen(buf));
     return port;
 }
 
@@ -241,4 +242,17 @@ int getFileSizeOnMessage(char* response){
     int result;
     sscanf(response+1, "%d", &result);
     return result;
+}
+
+int readSocketResponse(int socket_fd, char* str) {
+    FILE* fp = fdopen(socket_fd, "r");
+
+	do {
+		memset(str, 0, 1024);
+		str = fgets(str, 1024, fp);
+		printf("%s", str);
+
+	} while (!('1' <= str[0] && str[0] <= '5') || str[3] != ' ');
+
+	return 0;
 }

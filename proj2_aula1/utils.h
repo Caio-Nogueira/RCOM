@@ -43,3 +43,5 @@ int getField(const char* string, int startPoint, char * delims, char* field);
 int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo);
 
 int getFileSizeOnMessage(char* response);
+
+int readSocketResponse(int socket_fd, char* str);
