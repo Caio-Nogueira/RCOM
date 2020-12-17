@@ -153,14 +153,19 @@ int getField(const char* string, int startPoint, char * delims, char* field){
 
 char* getFilenameFromPath(char* url){
     int fileSize = strlen(url);
-    int i = 0;
+    //printf("%d\n", fileSize);
+    int i = 1;
+    int index = 0;
     while (i < fileSize) {
         if (url[i] == '/') {
-            url += i + 1;
+            index = i + 1;
         }
         i++;
+        //printf("i: %d ; buf[i]: %c\n",i, url[i]);
     }
-    return url;
+
+    //printf("url: %s\n", url);
+    return url + index;
 }
 
 int writeAndReadFields(char* buf, int sockfd, struct fields tcpInfo){

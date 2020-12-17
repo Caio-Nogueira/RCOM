@@ -212,9 +212,12 @@ int main(int argc, char** argv){
 
 	strcpy(filename, getFilenameFromPath(tcpInfo.urlPath));
 
-	getFilenameFromPath(filename);
+	for (int i = 0; i < strlen(filename); i++){
+		if (filename[i] == '/') strcpy(filename, getFilenameFromPath(tcpInfo.urlPath));
+	}
 
 	int fd = open(filename, O_CREAT | O_WRONLY , 0666);
+	printf("filename: %s\n", filename);
 	char bytes[1024];
 	int bytesRead;
 	float progress = 0.0;
