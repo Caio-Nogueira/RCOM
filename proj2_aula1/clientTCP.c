@@ -147,36 +147,6 @@ int main(int argc, char** argv){
 	//Data socket creation
     int datafd = create_socket(inet_ntoa(*((struct in_addr *)h->h_addr)), port);
 
-
-	//char command[512];
-
-    //sprintf(command, "telnet %s %d\n", tcpInfo.hostname, port);
-
-    /*if (write(datafd, command, strlen(command)) < 0) {
-        perror("Failed to send command.\n");
-        exit(1);
-    }*/
-
-	
-	//char* filename = malloc(strlen(tcpInfo.urlPath) + 1);
-
-	/*char* binaryCmd = "binary\n";
-	
-	write(sockfd, binaryCmd, strlen(binaryCmd));
-	
-	int binaryResponseCode = {0};
-	char binaryresponse[1024];
-
-	FILE* file1 = fdopen(sockfd, "r");
-	
-	fgets(binaryresponse, 1024, file1);
-	printf("%s\n", binaryresponse);
-	sscanf(binaryresponse, "%d", &binaryResponseCode);
-	printf("%d\n", binaryResponseCode);*/
-
-
-	
-	
 	printf("writting the retrieve command\n");
 	char* retr_command = malloc(strlen(tcpInfo.urlPath) + 6);
 	sprintf(retr_command, "retr %s\n", tcpInfo.urlPath);
@@ -197,7 +167,7 @@ int main(int argc, char** argv){
 	sscanf(response, "%d", &responseCode);
 
 	int size = getFileSizeOnMessage(response);
-	printf("%d\n", size);
+	printf("File size = %d bytes\n", size);
 
 	if (responseCode != 150){
 		printf("Error\n");
@@ -223,7 +193,8 @@ int main(int argc, char** argv){
 	float progress = 0.0;
 	int totalBytes = 0;
 
-	while ( (bytesRead = read(datafd, bytes, 1024))) {
+	while ((totalBytes != size)) {
+		bytesRead = read(datafd, bytes, 1024);
 		if (bytesRead < 0){
 			perror("read()\n");
 			exit(1);
