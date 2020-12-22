@@ -11,4 +11,4 @@ clean:
 	@rm -f download
 
 download: clean main
-	@./download "ftp://anonymous:xd@ftp.up.pt/pub/CPAN/RECENT-6h.json"
+	@./download "ftp://ftp.up.pt/pub/CPAN/RECENT-6h.json"

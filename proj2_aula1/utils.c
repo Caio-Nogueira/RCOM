@@ -58,6 +58,20 @@ int parseURL(char* string, int length, struct fields *tcpInfo){
     return 0;
 }
 
+int verifyFields(struct fields *tcpInfo){
+    if(tcpInfo->password[0] == '\0' && strcmp(tcpInfo->user, "anonymous") && tcpInfo->user[0] != '\0'){
+		printf("Insert your password: ");
+		scanf("%s", tcpInfo->password);
+		printf("%s\n", tcpInfo->password);
+	}
+	else if (tcpInfo->user[0] == '\0') {
+		strcpy(tcpInfo->user, "anonymous");
+		printf("%s\n", tcpInfo->user);
+		strcpy(tcpInfo->password, "ftp");
+	}
+    return 0;
+}
+
 int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, int* startBytes, int* endBytes){
     (*startBytes) = (*endBytes);
     

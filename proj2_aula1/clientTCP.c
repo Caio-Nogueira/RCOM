@@ -94,8 +94,7 @@ int readAndPrintEverything(char * buf, int length, int sockfd){
 }
 
 int main(int argc, char** argv){
-
-	//Get the IP adress of the host whose hostname is the corresponding part in argv
+	//Get the url's fields (username, password, hostname and file url)
 	struct fields tcpInfo;
     if(argc == 1){
         printf("Missing URL field.\n");
@@ -106,21 +105,10 @@ int main(int argc, char** argv){
         return parseRes;
     }
 	printf("Hostname: %s\n", tcpInfo.hostname);
-
-	if(tcpInfo.password[0] == '\0' && strcmp(tcpInfo.user, "anonymous") && tcpInfo.user[0] != '\0'){
-		printf("Insert your password: ");
-		scanf("%s", tcpInfo.password);
-		printf("%s\n", tcpInfo.password);
-	}
-
-	else if (tcpInfo.user[0] == '\0') {
-		strcpy(tcpInfo.user, "anonymous");
-		printf("%s\n", tcpInfo.user);
-		strcpy(tcpInfo.password, "ftp");
-	}
+	//Verify if the url is correct; ask for password if only it is missing and assume username anonymous if both are missing
+	verifyFields(&tcpInfo);
 
     struct hostent *h;
-	
 	//Get the IP
     if ((h=gethostbyname(tcpInfo.hostname)) == NULL) {  
             herror("gethostbyname");
@@ -146,7 +134,7 @@ int main(int argc, char** argv){
 
 	//Data socket creation
     int datafd = create_socket(inet_ntoa(*((struct in_addr *)h->h_addr)), port);
-
+	
 	printf("writting the retrieve command\n");
 	char* retr_command = malloc(strlen(tcpInfo.urlPath) + 6);
 	sprintf(retr_command, "retr %s\n", tcpInfo.urlPath);
@@ -165,7 +153,7 @@ int main(int argc, char** argv){
 	fgets(response, 1024, file);
 	printf("%s\n", response);
 	sscanf(response, "%d", &responseCode);
-
+	//Get the file's size
 	int size = getFileSizeOnMessage(response);
 	printf("File size = %d bytes\n", size);
 
