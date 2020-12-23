@@ -1,6 +1,7 @@
 /*      (C)2000 FEUP  */
 
 #include "utils.h"
+#include "parsers.h"
 
 #define SERVER_PORT 21
 
@@ -31,67 +32,7 @@ int create_socket(char* ip, int port) {
 }
 
 
-int readAndPrintEverything(char * buf, int length, int sockfd){
-	int bytes = 0;
-	int lines_read = 0; //Ou times_read, quando/se fizermos o TODO
-	
-	int lastBuffer = FALSE;
-	int endOfLine = TRUE;
-	int endOfBuf = FALSE;
-	int startBytes = 0;
-	int endBytes = 0;
-	
-	//int get_line(char* buf, int bytes, int* lastBuf, int* endOfLine, int* endOfBuf, int* startBytes, int* endBytes);
-	while(lastBuffer == FALSE){
-		//Set start and end bytes to 0
-		startBytes = 0;
-		endBytes = 0;
-		endOfBuf = FALSE;
 
-
-		bytes = read(sockfd, buf, 255);
-		if(bytes <= 0){
-			perror("a");
-			continue;
-		}
-		buf[bytes] = '\0';
-		
-
-		while(endOfBuf != TRUE){
-			int invalid_response = get_line(buf, bytes, &lastBuffer, &endOfLine, &endOfBuf, &startBytes, &endBytes);
-			if(invalid_response){
-				return -1;
-			}
-			if(endOfLine == TRUE){
-				printf("%c", buf[startBytes - 4]);
-				printf("%c", buf[startBytes - 3]);
-				printf("%c", buf[startBytes - 2]);
-				printf("%c", buf[startBytes - 1]);
-			}
-			for(int i = startBytes; i<endBytes; i++){
-				printf("%c", buf[i]);
-			}
-			if(endOfLine == TRUE){
-				printf("\n");
-			}
-			endBytes++;
-		}
-
-		//finalLine = find_lines(buf, bytes, &startLine);
-		
-		//printf("%s\n", buf);
-		/*
-		for(int i = 0; i < bytes; i++){
-			printf("%x ", buf[i]);
-		}
-		printf("\n");
-		printf("Bytes %d\n", bytes);*/
-		lines_read++;
-		//TODO: Add part where, if the line isn't over yet, it keeps reading
-		
-	}
-	return lines_read;
-}
 
 int main(int argc, char** argv){
 	//Get the url's fields (username, password, hostname and file url)

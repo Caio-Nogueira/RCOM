@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -g
 
 main: 
-	@gcc ${CFLAGS} -o download clientTCP.c utils.c -lm
+	@gcc ${CFLAGS} -o download clientTCP.c utils.c parsers.c -lm
 
 clean:	
 	@rm -f download
